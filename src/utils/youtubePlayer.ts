@@ -126,7 +126,6 @@ class YouTubePlayerController {
           width: '240',
           videoId,
           playerVars: {
-            // autoplay muted — allowed by all browsers
             autoplay: autoPlay ? 1 : 0,
             mute: autoPlay ? 1 : 0,
             controls: 0,
@@ -137,6 +136,8 @@ class YouTubePlayerController {
             playsinline: 1,
             rel: 0,
             start: startTime,
+            enablejsapi: 1,
+            origin: typeof window !== 'undefined' ? window.location.origin : undefined,
           },
           events: {
             onReady: (event: any) => {

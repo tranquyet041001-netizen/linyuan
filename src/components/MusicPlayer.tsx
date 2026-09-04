@@ -89,13 +89,14 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
     if (autoPlayTrigger && !isPlaying && !isNone) {
       if (isYouTube) {
         youtubeAudioPlayer.play();
+        // Only fallback to ambient if YouTube definitively errors out
         const fallbackTimer = setTimeout(() => {
-          if (!youtubeAudioPlayer.getIsPlaying()) {
-            console.log('YouTube autoplay delayed/blocked, falling back to ambient audio');
+          if (!youtubeAudioPlayer.getIsPlaying() && youtubeAudioPlayer.getError()) {
+            console.log('YouTube error encountered, falling back to ambient audio');
             sakuraAudio.play();
             setIsPlaying(true);
           }
-        }, 2000);
+        }, 4000);
         return () => clearTimeout(fallbackTimer);
       } else {
         sakuraAudio.play();

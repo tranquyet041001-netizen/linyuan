@@ -54,6 +54,10 @@ export function getAllStoredBirthdays(): BirthdayData[] {
 }
 
 export function getStoredBirthday(idOrSlug: string): BirthdayData | null {
+  const all = getAllStoredBirthdays();
+  const found = all.find((b) => b.id === idOrSlug || b.slug === idOrSlug);
+  if (found) return found;
+
   if (
     idOrSlug === 'le-ngoc-han-2026' ||
     idOrSlug === 'demo-le-ngoc-han-2026' ||
@@ -64,9 +68,7 @@ export function getStoredBirthday(idOrSlug: string): BirthdayData | null {
     return DEMO_BIRTHDAY;
   }
 
-  const all = getAllStoredBirthdays();
-  const found = all.find((b) => b.id === idOrSlug || b.slug === idOrSlug);
-  return found || null;
+  return null;
 }
 
 export function saveStoredBirthday(data: BirthdayData, isPublish = false): BirthdayData {
