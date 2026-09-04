@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { HomePage } from './pages/HomePage';
 import { CreateBirthday } from './pages/CreateBirthday';
 import { BirthdayPage } from './pages/BirthdayPage';
@@ -28,22 +29,47 @@ export default function App() {
   }, []);
 
   if (currentRoute.startsWith('#/my-birthdays')) {
-    return <MyBirthdaysPage />;
+    return (
+      <>
+        <MyBirthdaysPage />
+        <Analytics />
+      </>
+    );
   }
 
   if (currentRoute.startsWith('#/edit/')) {
     const id = currentRoute.replace('#/edit/', '');
-    return <CreateBirthday editBirthdayId={id} />;
+    return (
+      <>
+        <CreateBirthday editBirthdayId={id} />
+        <Analytics />
+      </>
+    );
   }
 
   if (currentRoute.startsWith('#/create')) {
-    return <CreateBirthday />;
+    return (
+      <>
+        <CreateBirthday />
+        <Analytics />
+      </>
+    );
   }
 
   if (currentRoute.startsWith('#/birthday/')) {
     const id = currentRoute.replace('#/birthday/', '');
-    return <BirthdayPage birthdayId={id || 'mai-2026'} />;
+    return (
+      <>
+        <BirthdayPage birthdayId={id || 'mai-2026'} />
+        <Analytics />
+      </>
+    );
   }
 
-  return <HomePage />;
+  return (
+    <>
+      <HomePage />
+      <Analytics />
+    </>
+  );
 }
