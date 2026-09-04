@@ -17,8 +17,8 @@ export async function compressImage(
 ): Promise<{ blob: Blob; dataUrl: string }> {
   const { maxWidth = 1200, maxHeight = 1200, quality = 0.82 } = options;
 
-  // If already SVG or tiny file (< 30KB), read directly as dataUrl and blob
-  if (file.type === 'image/svg+xml' || file.size < 30 * 1024) {
+  // If already SVG, read directly as dataUrl and blob
+  if (file.type === 'image/svg+xml') {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {

@@ -168,7 +168,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
     try {
       setUploadingAvatar(true);
-      const url = await processAndUploadImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.85 });
+      const url = await processAndUploadImage(file, { maxWidth: 480, maxHeight: 480, quality: 0.78 });
       setFormData((prev) => ({ ...prev, avatar_url: url }));
       showToast('✓ Tải ảnh đại diện thành công!');
     } catch (err: any) {
@@ -186,7 +186,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
     try {
       setUploadingCover(true);
-      const url = await processAndUploadImage(file, { maxWidth: 1600, maxHeight: 900, quality: 0.85 });
+      const url = await processAndUploadImage(file, { maxWidth: 960, maxHeight: 540, quality: 0.75 });
       setFormData((prev) => ({ ...prev, cover_url: url }));
       showToast('✓ Tải ảnh bìa thành công!');
     } catch (err: any) {

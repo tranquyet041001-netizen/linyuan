@@ -99,7 +99,19 @@ export function saveStoredBirthday(data: BirthdayData, isPublish = false): Birth
       all.unshift(updatedRecord);
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch (quotaErr) {
+      console.warn('LocalStorage quota exceeded, pruning old drafts to preserve current birthday', quotaErr);
+      // Keep only top 3 items to fit quota
+      const pruned = all.slice(0, 3);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+      } catch (e2) {
+        // Just keep the single current item
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([updatedRecord]));
+      }
+    }
     clearAutoSaveDraft();
 
     // Async sync to backend
