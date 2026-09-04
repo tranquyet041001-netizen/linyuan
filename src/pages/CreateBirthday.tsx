@@ -220,10 +220,16 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const currentCount = formData.memories.length;
-    const availableSlots = 6 - currentCount;
+    // Check if current memories are only the default demo memories (mem-1 to mem-6)
+    const isOnlyDemoMemories = formData.memories.length > 0 && 
+      formData.memories.every((m) => ['mem-1', 'mem-2', 'mem-3', 'mem-4', 'mem-5', 'mem-6'].includes(m.id));
+
+    const currentBaseMemories = isOnlyDemoMemories ? [] : formData.memories;
+    const maxPhotos = 20;
+    const availableSlots = maxPhotos - currentBaseMemories.length;
+
     if (availableSlots <= 0) {
-      alert('Bạn đã đạt giới hạn tối đa 6 ảnh kỷ niệm.');
+      alert(`Bạn đã đạt giới hạn tối đa ${maxPhotos} ảnh kỷ niệm.`);
       e.target.value = '';
       return;
     }
@@ -248,9 +254,9 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
       setFormData((prev) => ({
         ...prev,
-        memories: [...prev.memories, ...newItems],
+        memories: [...(isOnlyDemoMemories ? [] : prev.memories), ...newItems],
       }));
-      showToast(`✓ Đã thêm ${newItems.length} ảnh kỷ niệm!`);
+      showToast(`✓ Đã thêm thành công ${newItems.length} ảnh kỷ niệm!`);
     } catch (err: any) {
       alert(err.message || 'Lỗi khi tải danh sách ảnh kỷ niệm');
     } finally {
@@ -261,8 +267,8 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
   // Memories handlers
   const handleAddMemory = () => {
-    if (formData.memories.length >= 6) {
-      alert('Bạn có thể thêm tối đa 6 ảnh kỷ niệm.');
+    if (formData.memories.length >= 20) {
+      alert('Bạn có thể thêm tối đa 20 ảnh kỷ niệm.');
       return;
     }
     const newMem: MemoryItem = {
@@ -273,6 +279,11 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
       location: 'Tokyo',
     };
     setFormData((prev) => ({ ...prev, memories: [...prev.memories, newMem] }));
+  };
+
+  const handleClearDemoMemories = () => {
+    setFormData((prev) => ({ ...prev, memories: [] }));
+    showToast('✓ Đã dọn sạch ảnh mẫu để thêm ảnh của bạn!');
   };
 
   const handleRemoveMemory = (id: string) => {
@@ -882,20 +893,34 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
               {formData.show_memories !== false && (
                 <>
-                  <div className="flex items-center justify-between pt-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     <div>
                       <h3 className="font-semibold text-sm text-pink-300 uppercase tracking-wider">
-                        Photo Memories ({formData.memories.length}/6)
+                        Photo Memories ({formData.memories.length}/20)
                       </h3>
                       <p className="text-zinc-400 text-[11px]">
                         Polaroid style cards with captions and year tags
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Clear demo photos if present */}
+                      {formData.memories.length > 0 && 
+                        formData.memories.some((m) => ['mem-1', 'mem-2', 'mem-3', 'mem-4', 'mem-5', 'mem-6'].includes(m.id)) && (
+                        <button
+                          type="button"
+                          onClick={handleClearDemoMemories}
+                          className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium flex items-center gap-1 transition-colors border border-zinc-700"
+                          title="Xóa tất cả ảnh mẫu để tải ảnh của bạn"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Xóa ảnh mẫu</span>
+                        </button>
+                      )}
+
                       {/* Batch Upload Photos button */}
                       <label className={`px-3 py-1.5 rounded-xl text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        formData.memories.length >= 6 || isBatchUploading
+                        formData.memories.length >= 20 || isBatchUploading
                           ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50'
                           : 'bg-pink-600 hover:bg-pink-700 shadow-md'
                       }`}>
@@ -909,7 +934,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                           type="file"
                           multiple
                           accept="image/*"
-                          disabled={formData.memories.length >= 6 || isBatchUploading}
+                          disabled={formData.memories.length >= 20 || isBatchUploading}
                           className="hidden"
                           onChange={handleBatchAddMemories}
                         />
@@ -919,7 +944,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                       <button
                         type="button"
                         onClick={handleAddMemory}
-                        disabled={formData.memories.length >= 6}
+                        disabled={formData.memories.length >= 20}
                         className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 text-xs font-medium flex items-center gap-1 transition-colors border border-zinc-700"
                         title="Thêm thẻ trống"
                       >

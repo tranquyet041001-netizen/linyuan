@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  sakura-birthday:
+    build: .
+    container_name: sakura-birthday-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+    volumes:
+      - sakura_data:/app/data
+      - sakura_uploads:/app/uploads
+
+volumes:
+  sakura_data:
+  sakura_uploads:

@@ -85,7 +85,7 @@ export async function compressImage(
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error('Không thể đọc dữ liệu ảnh. Vui lòng thử ảnh khác.'));
+      reject(new Error('Không thể đọc dữ liệu ảnh qua Canvas'));
     };
 
     img.src = objectUrl;
@@ -93,40 +93,58 @@ export async function compressImage(
 }
 
 /**
- * Handles end-to-end image processing & upload:
- * 1. Validates file format and reasonable size (< 20MB).
+ * Handles end-to-end image processing & upload with multi-tier fallback:
+ * 1. Validates reasonable size (< 25MB).
  * 2. Compresses client-side to minimize payload and optimize rendering.
  * 3. Attempts to upload to the server API (/api/upload).
  * 4. If backend is not available (offline/static/server down), safely falls back
  *    to the highly-compressed dataUrl (~40-80KB) so localStorage and URLs never overflow.
+ * 5. If Canvas fails (e.g. HEIC/HEIF on Windows Chrome), directly uploads to server API.
  */
 export async function processAndUploadImage(
   file: File,
   options: ImageProcessingOptions = {}
 ): Promise<string> {
   // 1. Validation
-  if (file.size > 20 * 1024 * 1024) {
-    throw new Error('Dung lượng ảnh quá lớn (>20MB). Vui lòng chọn ảnh nhỏ hơn.');
+  if (file.size > 25 * 1024 * 1024) {
+    throw new Error('Dung lượng ảnh quá lớn (>25MB). Vui lòng chọn ảnh nhỏ hơn.');
   }
 
-  const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg|bmp|heic|heif)$/i.test(file.name);
-  if (!isImage) {
-    throw new Error('Tệp đã chọn không phải hình ảnh hợp lệ.');
-  }
-
-  // 2. Client compression
-  const { blob, dataUrl } = await compressImage(file, options);
-
-  // 3. Attempt server upload
+  // 2. Try client-side canvas compression first
   try {
-    const serverUrl = await uploadImageToApi(blob, file.name);
-    if (serverUrl) {
-      return serverUrl;
-    }
-  } catch (err) {
-    console.warn('Server upload failed, falling back to compressed inline data', err);
-  }
+    const { blob, dataUrl } = await compressImage(file, options);
 
-  // 4. Safe fallback to compressed inline data
-  return dataUrl;
+    // 3. Attempt server upload with compressed blob
+    try {
+      const serverUrl = await uploadImageToApi(blob, file.name);
+      if (serverUrl) {
+        return serverUrl;
+      }
+    } catch (apiErr) {
+      console.warn('Server upload failed, using compressed dataUrl', apiErr);
+    }
+
+    // 4. Safe fallback to compressed inline data
+    return dataUrl;
+  } catch (canvasErr) {
+    console.warn('Client-side canvas compression skipped or failed, trying direct server upload', canvasErr);
+
+    // 5. If canvas fails (e.g. HEIC format), try direct server upload with original file
+    try {
+      const serverUrl = await uploadImageToApi(file, file.name);
+      if (serverUrl) {
+        return serverUrl;
+      }
+    } catch (e) {
+      console.warn('Direct server upload failed', e);
+    }
+
+    // 6. Ultimate fallback: raw FileReader
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve((e.target?.result as string) || '');
+      reader.onerror = () => reject(new Error('Không thể đọc tệp ảnh'));
+      reader.readAsDataURL(file);
+    });
+  }
 }

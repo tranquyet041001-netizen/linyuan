@@ -65,13 +65,14 @@ class YouTubePlayerController {
       host = document.createElement('div');
       host.id = this.hostElementId;
       host.style.position = 'fixed';
-      host.style.bottom = '-9999px';
-      host.style.left = '-9999px';
-      host.style.width = '240px';
-      host.style.height = '160px';
-      host.style.opacity = '0.01';
+      host.style.bottom = '0px';
+      host.style.right = '0px';
+      host.style.width = '200px';
+      host.style.height = '120px';
+      host.style.opacity = '0.001';
       host.style.pointerEvents = 'none';
-      host.style.zIndex = '-9999';
+      host.style.zIndex = '-1';
+      host.style.overflow = 'hidden';
       document.body.appendChild(host);
     }
     return host;
@@ -86,7 +87,6 @@ class YouTubePlayerController {
     autoPlay = false
   ): Promise<void> {
     return new Promise((resolve) => {
-      this.currentVideoId = videoId;
       this.startTime = startTime;
       this.endTime = endTime;
       this.volume = volume;
@@ -98,13 +98,17 @@ class YouTubePlayerController {
 
         if (this.player && typeof this.player.cueVideoById === 'function') {
           try {
-            this.player.cueVideoById({
-              videoId,
-              startSeconds: startTime,
-            });
+            // Only re-cue if video ID actually changed
+            if (this.currentVideoId !== videoId) {
+              this.currentVideoId = videoId;
+              this.player.cueVideoById({
+                videoId,
+                startSeconds: startTime,
+              });
+            }
             this.player.setVolume(this.volume);
             if (autoPlay) {
-              this.playMutedThenUnmute();
+              this.play();
             }
             resolve();
             return;
@@ -112,6 +116,8 @@ class YouTubePlayerController {
             console.warn('Error reusing YouTube player, recreating...', e);
           }
         }
+
+        this.currentVideoId = videoId;
 
         host.innerHTML = '<div id="sakura-yt-player-target"></div>';
 
@@ -272,10 +278,16 @@ class YouTubePlayerController {
         if (cur < this.startTime || (this.endTime > 0 && cur >= this.endTime)) {
           this.player.seekTo(this.startTime, true);
         }
-        // Use muted-then-unmute trick for manual play too (safer)
-        this.playMutedThenUnmute();
+        // Direct unmuted play with user interaction token
+        this.player.unMute();
+        this.player.setVolume(this.volume);
+        this.player.playVideo();
+        this.isPlaying = true;
+        this.startTimeChecker();
+        this.notifyListeners();
       } catch (e) {
-        console.warn('Autoplay blocked or player error', e);
+        console.warn('Direct unmuted play failed, trying muted autoplay fallback', e);
+        this.playMutedThenUnmute();
       }
     }
   }
@@ -367,6 +379,14 @@ class YouTubePlayerController {
       error: this.error,
     };
     this.listeners.forEach((cb) => cb(payload));
+  }
+
+  public getError(): string | null {
+    return this.error;
+  }
+
+  public getIsPlaying(): boolean {
+    return this.isPlaying;
   }
 
   public destroy() {

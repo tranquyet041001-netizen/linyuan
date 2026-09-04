@@ -18,6 +18,7 @@ import {
 import { BirthdayData, MusicType } from '../types/birthday';
 import { extractYouTubeVideoId, formatTime, fetchYouTubeMetadata } from '../utils/youtube';
 import { youtubeAudioPlayer } from '../utils/youtubePlayer';
+import { sakuraAudio } from '../utils/audioSynthesizer';
 import { DualRangeSlider } from './DualRangeSlider';
 
 interface MusicEditorProps {
@@ -230,18 +231,18 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
                 <span>Recommendations:</span>
                 <button
                   type="button"
-                  onClick={() => setUrlInput('https://www.youtube.com/watch?v=5qap5aO4i9A')}
+                  onClick={() => setUrlInput('https://www.youtube.com/watch?v=lTRiuFIWV54')}
                   className="text-pink-400 hover:underline"
                 >
-                  Lofi Hip Hop / Relax
+                  Lofi Chill Beats
                 </button>
                 <span>•</span>
                 <button
                   type="button"
-                  onClick={() => setUrlInput('https://www.youtube.com/watch?v=jfKfPfyJRdk')}
+                  onClick={() => setUrlInput('https://www.youtube.com/watch?v=3jWRrafhO7M')}
                   className="text-pink-400 hover:underline"
                 >
-                  Radio Beats
+                  Ghibli Piano & Jazz
                 </button>
               </div>
             </div>
@@ -374,12 +375,25 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
 
       {data.music_type === 'ambient' && (
         <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-3 animate-in fade-in duration-200">
-          <div className="flex items-center gap-2 text-pink-300">
-            <Sparkles className="w-4 h-4" />
-            <span className="font-semibold text-xs">Built-In Japanese Ambient Synthesizer</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-pink-300">
+              <Sparkles className="w-4 h-4" />
+              <span className="font-semibold text-xs">Japanese Ambient Synthesizer (Insen scale)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = sakuraAudio.toggle();
+                setIsPreviewPlaying(next);
+              }}
+              className="px-3 py-1 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-xs font-medium flex items-center gap-1 transition-colors shadow-md"
+            >
+              {isPreviewPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+              <span>{isPreviewPlaying ? 'Dừng thử' : 'Nghe thử'}</span>
+            </button>
           </div>
           <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Plays an ethereal, generative Koto & Piano Pentatonic melody (Insen scale) generated in real-time with Web Audio API. 100% reliable with zero external video or bandwidth dependencies.
+            Giai điệu đàn Koto & Piano ngũ âm Nhật Bản thanh tịnh, được tạo trực tiếp bằng Web Audio API. Hoạt động 100% không phụ thuộc video ngoài hay mạng internet.
           </p>
           <div className="pt-2 flex items-center justify-between border-t border-zinc-800">
             <span className="text-[11px] text-zinc-400">Volume</span>
@@ -422,9 +436,23 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
       )}
 
       {errorMessage && (
-        <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2 animate-in fade-in duration-200">
-          <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
-          <span>{errorMessage}</span>
+        <div className="p-3.5 rounded-xl bg-rose-950/70 border border-rose-800/80 text-rose-300 text-xs flex flex-col gap-2 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setErrorMessage(null);
+              onChange({ music_type: 'ambient' });
+              sakuraAudio.play();
+              setIsPreviewPlaying(true);
+            }}
+            className="self-start px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-[11px] font-medium transition-colors"
+          >
+            Chuyển sang Nhạc Koto Nhật Bản (100% hoạt động mượt)
+          </button>
         </div>
       )}
     </div>

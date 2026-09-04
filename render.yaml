@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: sakura-birthday
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    disk:
+      name: sakura-data
+      mountPath: /app/data
+      sizeGB: 1

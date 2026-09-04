@@ -86,9 +86,17 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   }, [isYouTube]);
 
   useEffect(() => {
-    if (autoPlayTrigger && !isPlaying && !isNone && isReady) {
+    if (autoPlayTrigger && !isPlaying && !isNone) {
       if (isYouTube) {
         youtubeAudioPlayer.play();
+        const fallbackTimer = setTimeout(() => {
+          if (!youtubeAudioPlayer.getIsPlaying()) {
+            console.log('YouTube autoplay delayed/blocked, falling back to ambient audio');
+            sakuraAudio.play();
+            setIsPlaying(true);
+          }
+        }, 2000);
+        return () => clearTimeout(fallbackTimer);
       } else {
         sakuraAudio.play();
         setIsPlaying(true);
@@ -102,6 +110,10 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
     if (isYouTube) {
       const next = youtubeAudioPlayer.toggle();
       setIsPlaying(next);
+      if (!next && youtubeAudioPlayer.getError()) {
+        sakuraAudio.play();
+        setIsPlaying(true);
+      }
     } else {
       const next = sakuraAudio.toggle();
       setIsPlaying(next);
@@ -245,7 +257,12 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
       )}
 
       <button
-        onClick={() => setShowModal(!showModal)}
+        onClick={() => {
+          if (!isPlaying) {
+            handleTogglePlay();
+          }
+          setShowModal(!showModal);
+        }}
         className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl border transition-all duration-300 ${
           isPlaying
             ? 'bg-gradient-to-tr from-pink-600 via-rose-500 to-pink-500 border-pink-300/60 shadow-pink-500/40 scale-105 ring-4 ring-pink-500/20'
