@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { HomePage } from './pages/HomePage';
 import { CreateBirthday } from './pages/CreateBirthday';
 import { BirthdayPage } from './pages/BirthdayPage';
@@ -28,22 +29,47 @@ export default function App() {
   }, []);
 
   if (currentRoute.startsWith('#/my-birthdays')) {
-    return <MyBirthdaysPage />;
+    return (
+      <>
+        <MyBirthdaysPage />
+        <SpeedInsights />
+      </>
+    );
   }
 
   if (currentRoute.startsWith('#/edit/')) {
     const id = currentRoute.replace('#/edit/', '');
-    return <CreateBirthday editBirthdayId={id} />;
+    return (
+      <>
+        <CreateBirthday editBirthdayId={id} />
+        <SpeedInsights />
+      </>
+    );
   }
 
   if (currentRoute.startsWith('#/create')) {
-    return <CreateBirthday />;
+    return (
+      <>
+        <CreateBirthday />
+        <SpeedInsights />
+      </>
+    );
   }
 
   if (currentRoute.startsWith('#/birthday/')) {
     const id = currentRoute.replace('#/birthday/', '');
-    return <BirthdayPage birthdayId={id || 'mai-2026'} />;
+    return (
+      <>
+        <BirthdayPage birthdayId={id || 'mai-2026'} />
+        <SpeedInsights />
+      </>
+    );
   }
 
-  return <HomePage />;
+  return (
+    <>
+      <HomePage />
+      <SpeedInsights />
+    </>
+  );
 }
