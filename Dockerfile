@@ -8,7 +8,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 RUN npm run build
@@ -21,7 +21,7 @@ ENV NODE_ENV=production
 ENV PORT=5000
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Copy server code and built frontend static assets
 COPY server/ ./server/
