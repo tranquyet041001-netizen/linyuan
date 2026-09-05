@@ -72,15 +72,23 @@ export const FinalMessage: React.FC<FinalMessageProps> = ({ birthday, theme, onR
         className="space-y-8"
       >
         {/* Hanko Stamp */}
-        <div className={`hanko-stamp px-4 py-1 text-xs tracking-widest text-sakura-crimson border-sakura-crimson ${
-          theme.isDark ? 'bg-white/10' : 'bg-rose-50/90 shadow-sm'
+        <div className={`hanko-stamp px-4 py-1 text-xs tracking-widest ${
+          theme.id === 'pure-sakura'
+            ? 'text-amber-900 border-amber-700 bg-amber-50/90 shadow-sm'
+            : theme.isDark 
+            ? 'text-sakura-crimson border-sakura-crimson bg-white/10' 
+            : 'text-sakura-crimson border-sakura-crimson bg-rose-50/90 shadow-sm'
         }`}>
           永遠の祝福
         </div>
 
         {/* Closing Headline */}
         <h2 className={`text-3xl sm:text-5xl font-japanese font-bold text-transparent bg-clip-text ${
-          theme.isDark 
+          theme.id === 'pure-sakura'
+            ? 'bg-gradient-to-r from-stone-950 via-amber-900 to-stone-800 drop-shadow-sm'
+            : theme.id === 'sakura-day'
+            ? 'bg-gradient-to-r from-rose-950 via-pink-900 to-rose-800 drop-shadow-sm'
+            : theme.isDark 
             ? 'bg-gradient-to-r from-pink-200 via-white to-pink-300 drop-shadow-md' 
             : 'bg-gradient-to-r from-rose-950 via-pink-900 to-rose-800 drop-shadow-sm'
         }`}>
@@ -88,7 +96,7 @@ export const FinalMessage: React.FC<FinalMessageProps> = ({ birthday, theme, onR
         </h2>
 
         <p className={`text-sm sm:text-base font-serif italic ${
-          theme.isDark ? 'text-zinc-300' : 'text-zinc-600 font-normal'
+          theme.id === 'pure-sakura' ? 'text-stone-600 font-normal' : theme.isDark ? 'text-zinc-300' : 'text-zinc-600 font-normal'
         } max-w-lg mx-auto leading-relaxed`}>
           "Like the spring cherry blossoms that greet the world every year, may your days always be filled with renewal, hope, and deep joy."
         </p>
@@ -97,7 +105,11 @@ export const FinalMessage: React.FC<FinalMessageProps> = ({ birthday, theme, onR
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={handleMakeWish}
-            className="px-8 py-4 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 hover:from-pink-600 hover:to-rose-600 text-white font-semibold text-sm sm:text-base shadow-2xl shadow-pink-500/30 flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95"
+            className={`px-8 py-4 rounded-full ${
+              theme.id === 'pure-sakura'
+                ? 'bg-gradient-to-r from-amber-700 via-stone-800 to-amber-900 text-amber-50 shadow-amber-900/25 border-amber-300/30'
+                : 'bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 hover:from-pink-600 hover:to-rose-600 text-white shadow-pink-500/30'
+            } font-semibold text-sm sm:text-base shadow-2xl flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95`}
           >
             <Flame className="w-5 h-5 text-amber-200 animate-pulse" />
             <span>Make a Birthday Wish 🏮</span>
@@ -107,7 +119,9 @@ export const FinalMessage: React.FC<FinalMessageProps> = ({ birthday, theme, onR
             <button
               onClick={onReplay}
               className={`px-6 py-4 rounded-full ${
-                theme.isDark 
+                theme.id === 'pure-sakura'
+                  ? 'bg-white hover:bg-stone-50 text-stone-700 border-stone-300 shadow-sm'
+                  : theme.isDark 
                   ? 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white border-zinc-700' 
                   : 'bg-white hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 border-zinc-300 shadow-sm'
               } text-xs sm:text-sm font-medium border flex items-center gap-2 transition-colors`}

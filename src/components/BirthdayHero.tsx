@@ -20,8 +20,12 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className={`mb-8 hanko-stamp px-4 py-1.5 text-xs sm:text-sm tracking-widest text-sakura-crimson border-sakura-crimson ${
-          theme.isDark ? 'bg-white/10' : 'bg-rose-50/90 shadow-sm'
+        className={`mb-8 hanko-stamp px-4 py-1.5 text-xs sm:text-sm tracking-widest ${
+          theme.id === 'pure-sakura'
+            ? 'text-amber-900 border-amber-700 bg-amber-50/90 shadow-sm'
+            : theme.isDark 
+            ? 'text-sakura-crimson border-sakura-crimson bg-white/10' 
+            : 'text-sakura-crimson border-sakura-crimson bg-rose-50/90 shadow-sm'
         } backdrop-blur-md`}
       >
         御祝い • 特別な日
@@ -35,9 +39,17 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
         transition={{ duration: 0.8, delay: 0.2 }}
         className="relative mb-10 group"
       >
-        <div className="absolute -inset-3 rounded-full bg-gradient-to-tr from-pink-500 via-rose-400 to-amber-300 opacity-70 blur-md group-hover:opacity-100 transition-opacity animate-pulse" />
+        <div className={`absolute -inset-3 rounded-full bg-gradient-to-tr ${
+          theme.id === 'pure-sakura'
+            ? 'from-amber-400 via-stone-300 to-amber-200'
+            : 'from-pink-500 via-rose-400 to-amber-300'
+        } opacity-70 blur-md group-hover:opacity-100 transition-opacity animate-pulse`} />
         
-        <div className="relative w-36 h-36 sm:w-48 sm:h-48 rounded-full p-1.5 bg-gradient-to-b from-white/90 to-pink-200/60 shadow-2xl overflow-hidden">
+        <div className={`relative w-36 h-36 sm:w-48 sm:h-48 rounded-full p-1.5 bg-gradient-to-b ${
+          theme.id === 'pure-sakura'
+            ? 'from-white to-stone-200 shadow-xl'
+            : 'from-white/90 to-pink-200/60 shadow-2xl'
+        } overflow-hidden`}>
           <img
             src={birthday.avatar_url}
             alt={birthday.name}
@@ -50,7 +62,11 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', delay: 0.6 }}
-            className="absolute bottom-1 right-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-pink-600 to-rose-600 text-white font-cinzel font-bold text-xs sm:text-sm shadow-xl border border-white/50"
+            className={`absolute bottom-1 right-2 px-3.5 py-1 rounded-full bg-gradient-to-r ${
+              theme.id === 'pure-sakura'
+                ? 'from-amber-700 to-stone-800 text-amber-100 border-amber-300/40'
+                : 'from-pink-600 to-rose-600 text-white border-white/50'
+            } font-cinzel font-bold text-xs sm:text-sm shadow-xl border`}
           >
             {birthday.age}th Chapter
           </motion.div>
@@ -66,25 +82,33 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
         className="space-y-4 max-w-4xl w-full px-4"
       >
         <span className={`text-xs sm:text-sm font-japanese tracking-[0.35em] ${
-          theme.isDark ? 'text-pink-400' : 'text-pink-600 font-bold'
+          theme.id === 'pure-sakura'
+            ? 'text-amber-800 font-bold'
+            : theme.isDark 
+            ? 'text-pink-400 font-semibold' 
+            : 'text-pink-600 font-bold'
         } uppercase block`}>
           Happy Birthday
         </span>
 
         {/* Name with ample padding & line-height so descenders and dots are never clipped */}
         <h1 className={`text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-bold tracking-normal text-transparent bg-clip-text ${
-          theme.isDark 
-            ? 'bg-gradient-to-b from-white via-pink-100 to-pink-300 drop-shadow-[0_2px_24px_rgba(255,183,197,0.35)]'
-            : 'bg-gradient-to-b from-rose-950 via-pink-900 to-rose-800 drop-shadow-[0_2px_12px_rgba(244,63,94,0.15)]'
+          theme.id === 'pure-sakura'
+            ? 'bg-gradient-to-b from-stone-950 via-amber-950 to-stone-800 drop-shadow-[0_2px_12px_rgba(180,83,9,0.15)]'
+            : theme.id === 'sakura-day'
+            ? 'bg-gradient-to-b from-rose-950 via-pink-900 to-rose-800 drop-shadow-[0_2px_12px_rgba(244,63,94,0.15)]'
+            : theme.id === 'sunset-sakura'
+            ? 'bg-gradient-to-b from-rose-100 via-amber-100 to-rose-300 drop-shadow-[0_2px_20px_rgba(251,113,133,0.35)]'
+            : 'bg-gradient-to-b from-white via-pink-100 to-pink-300 drop-shadow-[0_2px_24px_rgba(255,183,197,0.35)]'
         } py-2 px-2 leading-[1.3] select-text break-words`}>
           {birthday.name}
         </h1>
 
         {birthday.birthday && (
           <div className={`flex items-center justify-center gap-2 text-xs sm:text-sm ${
-            theme.isDark ? 'text-zinc-400' : 'text-zinc-600 font-medium'
+            theme.id === 'pure-sakura' ? 'text-stone-600 font-medium' : theme.isDark ? 'text-zinc-400' : 'text-zinc-600 font-medium'
           } font-mono pt-1`}>
-            <Calendar className={`w-4 h-4 ${theme.isDark ? 'text-pink-400' : 'text-pink-600'}`} />
+            <Calendar className={`w-4 h-4 ${theme.id === 'pure-sakura' ? 'text-amber-700' : theme.isDark ? 'text-pink-400' : 'text-pink-600'}`} />
             <span>{birthday.birthday}</span>
           </div>
         )}
@@ -99,13 +123,21 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
         className="mt-10 max-w-2xl w-full space-y-3.5 px-4"
       >
         <p className={`text-lg sm:text-2xl font-japanese ${
-          theme.isDark ? 'text-pink-200/95 font-light' : 'text-rose-950/90 font-normal'
+          theme.id === 'pure-sakura'
+            ? 'text-stone-900 font-normal'
+            : theme.isDark 
+            ? 'text-pink-200/95 font-light' 
+            : 'text-rose-950/90 font-normal'
         } leading-relaxed tracking-wide`}>
           "{birthday.japaneseMessage}"
         </p>
 
         <p className={`text-xs sm:text-sm font-serif italic ${
-          theme.isDark ? 'text-zinc-400 font-light' : 'text-zinc-600 font-normal'
+          theme.id === 'pure-sakura'
+            ? 'text-stone-600 font-normal'
+            : theme.isDark 
+            ? 'text-zinc-400 font-light' 
+            : 'text-zinc-600 font-normal'
         } leading-relaxed`}>
           — {birthday.englishMessage}
         </p>

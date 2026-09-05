@@ -182,15 +182,30 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     );
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.35, petal.color);
-    grad.addColorStop(1, theme.isDark ? '#e11d62' : '#f43f77');
+
+    if (theme.id === 'pure-sakura') {
+      grad.addColorStop(1, '#d8cbbe');
+    } else if (theme.id === 'sunset-sakura') {
+      grad.addColorStop(1, '#ea580c');
+    } else if (theme.id === 'sakura-day') {
+      grad.addColorStop(1, '#f43f5e');
+    } else {
+      grad.addColorStop(1, '#e11d62');
+    }
 
     ctx.fillStyle = grad;
     ctx.fill();
 
+    if (theme.id === 'pure-sakura') {
+      ctx.strokeStyle = 'rgba(180, 130, 80, 0.2)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
     ctx.beginPath();
     ctx.moveTo(0, s * 0.4);
     ctx.lineTo(0, -s * 0.2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeStyle = theme.id === 'pure-sakura' ? 'rgba(180, 130, 80, 0.3)' : 'rgba(255, 255, 255, 0.35)';
     ctx.lineWidth = 0.6;
     ctx.stroke();
   };
@@ -256,9 +271,9 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
         ctx.scale(scaleX, 1);
         ctx.globalAlpha = p.opacity * (0.7 + burstRef.current * 0.3);
 
-        if (theme.isDark && p.z > 0.5) {
+        if (p.z > 0.4) {
           ctx.shadowColor = theme.petalShadow;
-          ctx.shadowBlur = 8 * p.z;
+          ctx.shadowBlur = (theme.isDark ? 8 : 4) * p.z;
         }
 
         drawSakuraPetal(ctx, p, scaleX);
