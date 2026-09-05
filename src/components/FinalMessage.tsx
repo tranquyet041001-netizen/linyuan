@@ -72,16 +72,24 @@ export const FinalMessage: React.FC<FinalMessageProps> = ({ birthday, theme, onR
         className="space-y-8"
       >
         {/* Hanko Stamp */}
-        <div className="hanko-stamp px-4 py-1 text-xs tracking-widest text-sakura-crimson border-sakura-crimson bg-white/10">
+        <div className={`hanko-stamp px-4 py-1 text-xs tracking-widest text-sakura-crimson border-sakura-crimson ${
+          theme.isDark ? 'bg-white/10' : 'bg-rose-50/90 shadow-sm'
+        }`}>
           永遠の祝福
         </div>
 
         {/* Closing Headline */}
-        <h2 className="text-3xl sm:text-5xl font-japanese font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-white to-pink-300 drop-shadow-md">
+        <h2 className={`text-3xl sm:text-5xl font-japanese font-bold text-transparent bg-clip-text ${
+          theme.isDark 
+            ? 'bg-gradient-to-r from-pink-200 via-white to-pink-300 drop-shadow-md' 
+            : 'bg-gradient-to-r from-rose-950 via-pink-900 to-rose-800 drop-shadow-sm'
+        }`}>
           {birthday.closingWish || 'May all your dreams blossom into reality.'}
         </h2>
 
-        <p className="text-sm sm:text-base font-serif italic text-zinc-300 max-w-lg mx-auto leading-relaxed">
+        <p className={`text-sm sm:text-base font-serif italic ${
+          theme.isDark ? 'text-zinc-300' : 'text-zinc-600 font-normal'
+        } max-w-lg mx-auto leading-relaxed`}>
           "Like the spring cherry blossoms that greet the world every year, may your days always be filled with renewal, hope, and deep joy."
         </p>
 
@@ -98,7 +106,11 @@ export const FinalMessage: React.FC<FinalMessageProps> = ({ birthday, theme, onR
           {onReplay && (
             <button
               onClick={onReplay}
-              className="px-6 py-4 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs sm:text-sm font-medium border border-zinc-700 flex items-center gap-2 transition-colors"
+              className={`px-6 py-4 rounded-full ${
+                theme.isDark 
+                  ? 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white border-zinc-700' 
+                  : 'bg-white hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 border-zinc-300 shadow-sm'
+              } text-xs sm:text-sm font-medium border flex items-center gap-2 transition-colors`}
             >
               <RotateCcw className="w-4 h-4" />
               <span>Replay Opening</span>
@@ -110,7 +122,9 @@ export const FinalMessage: React.FC<FinalMessageProps> = ({ birthday, theme, onR
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs font-japanese text-pink-300 tracking-wider pt-2"
+            className={`text-xs font-japanese ${
+              theme.isDark ? 'text-pink-300' : 'text-pink-700 font-semibold'
+            } tracking-wider pt-2`}
           >
             🌸 Wish released into the night sky! 🏮
           </motion.p>

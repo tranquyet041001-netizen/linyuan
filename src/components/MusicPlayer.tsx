@@ -159,22 +159,32 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   return (
     <div className="fixed bottom-6 right-6 z-40">
       {showModal && (
-        <div className={`mb-3 w-72 p-4 rounded-3xl shadow-2xl border ${theme.cardBg} ${theme.cardBorder} backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-3 duration-200 text-xs text-zinc-100 select-none`}>
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
+        <div className={`mb-3 w-72 p-4 rounded-3xl shadow-2xl border ${theme.cardBg} ${theme.cardBorder} backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-3 duration-200 text-xs ${
+          theme.isDark ? 'text-zinc-100' : 'text-zinc-800'
+        } select-none`}>
+          <div className={`flex items-center justify-between pb-3 mb-3 border-b ${
+            theme.isDark ? 'border-white/10' : 'border-zinc-200/80'
+          }`}>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-base">🎵</span>
               <div className="min-w-0">
-                <h4 className="font-semibold text-zinc-100 truncate text-[11px]">
+                <h4 className={`font-semibold ${
+                  theme.isDark ? 'text-zinc-100' : 'text-zinc-900'
+                } truncate text-[11px]`}>
                   Birthday Music
                 </h4>
-                <p className="text-[10px] text-pink-300/80 truncate">
+                <p className={`text-[10px] ${
+                  theme.isDark ? 'text-pink-300/80' : 'text-pink-700'
+                } truncate`}>
                   {trackTitle}
                 </p>
               </div>
             </div>
             <button
               onClick={() => setShowModal(false)}
-              className="p-1 rounded-lg text-zinc-400 hover:text-white transition-colors"
+              className={`p-1 rounded-lg ${
+                theme.isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'
+              } transition-colors`}
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -190,7 +200,9 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
               </button>
 
               <div className="flex-1 min-w-0">
-                <div className="flex justify-between text-[10px] font-mono text-zinc-400 mb-1">
+                <div className={`flex justify-between text-[10px] font-mono ${
+                  theme.isDark ? 'text-zinc-400' : 'text-zinc-500 font-medium'
+                } mb-1`}>
                   <span>{formatTime(currentTime)}</span>
                   <span>
                     {isYouTube && birthday.music_end_time
@@ -200,7 +212,9 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
                       : 'Ambient'}
                   </span>
                 </div>
-                <div className="w-full h-1 bg-zinc-700/60 rounded-full overflow-hidden">
+                <div className={`w-full h-1 ${
+                  theme.isDark ? 'bg-zinc-700/60' : 'bg-zinc-200'
+                } rounded-full overflow-hidden`}>
                   <div
                     className="h-full bg-gradient-to-r from-pink-500 to-rose-400 rounded-full transition-all duration-300"
                     style={{
@@ -216,12 +230,12 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
             <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={handleToggleMute}
-                className="text-zinc-400 hover:text-white transition-colors"
+                className={`${theme.isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'} transition-colors`}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                  <VolumeX className="w-3.5 h-3.5 text-rose-500" />
                 ) : (
-                  <Volume2 className="w-3.5 h-3.5 text-pink-400" />
+                  <Volume2 className={`w-3.5 h-3.5 ${theme.isDark ? 'text-pink-400' : 'text-pink-600'}`} />
                 )}
               </button>
               <input
@@ -230,24 +244,32 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
                 max="100"
                 value={isMuted ? 0 : volume}
                 onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
-                className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                className={`flex-1 h-1 ${
+                  theme.isDark ? 'bg-zinc-700' : 'bg-zinc-200'
+                } rounded-lg appearance-none cursor-pointer accent-pink-500`}
               />
-              <span className="font-mono text-[10px] text-zinc-400 w-7 text-right">
+              <span className={`font-mono text-[10px] ${
+                theme.isDark ? 'text-zinc-400' : 'text-zinc-600'
+              } w-7 text-right`}>
                 {isMuted ? 0 : volume}%
               </span>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] text-zinc-400">
+            <div className={`flex items-center justify-between pt-2 border-t ${
+              theme.isDark ? 'border-white/10 text-zinc-400' : 'border-zinc-200 text-zinc-600'
+            } text-[11px]`}>
               <span className="flex items-center gap-1.5">
-                <RotateCw className="w-3 h-3 text-pink-400" />
+                <RotateCw className={`w-3 h-3 ${theme.isDark ? 'text-pink-400' : 'text-pink-600'}`} />
                 <span>Loop Section</span>
               </span>
               <button
                 onClick={handleToggleLoop}
                 className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
                   isLoop
-                    ? 'bg-pink-600/80 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-pink-600 text-white'
+                    : theme.isDark 
+                    ? 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                    : 'bg-zinc-100 text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 {isLoop ? 'Enabled' : 'Disabled'}
@@ -267,7 +289,9 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
         className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl border transition-all duration-300 ${
           isPlaying
             ? 'bg-gradient-to-tr from-pink-600 via-rose-500 to-pink-500 border-pink-300/60 shadow-pink-500/40 scale-105 ring-4 ring-pink-500/20'
-            : 'bg-[#0f172a]/90 hover:bg-[#1a233d] border-pink-500/30 text-zinc-300 hover:text-white shadow-black/50'
+            : theme.isDark
+            ? 'bg-[#0f172a]/90 hover:bg-[#1a233d] border-pink-500/30 text-zinc-300 hover:text-white shadow-black/50'
+            : 'bg-white hover:bg-zinc-50 border-pink-300 text-zinc-700 hover:text-zinc-900 shadow-xl shadow-pink-500/10'
         }`}
         title="Background Music Controls"
       >
@@ -279,7 +303,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
             <span className="w-0.5 bg-white rounded-full animate-[pulse_1.0s_ease-in-out_infinite] h-3.5" />
           </div>
         ) : (
-          <Music className="w-5 h-5 text-pink-300" />
+          <Music className={`w-5 h-5 ${theme.isDark ? 'text-pink-300' : 'text-pink-600'}`} />
         )}
       </button>
     </div>

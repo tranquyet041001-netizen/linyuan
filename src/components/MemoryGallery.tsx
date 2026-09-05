@@ -19,13 +19,19 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ memories, theme })
     <section className="relative py-16 px-4 sm:px-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="text-center mb-12">
-        <span className="text-xs font-japanese tracking-[0.3em] text-pink-400 uppercase block mb-1">
+        <span className={`text-xs font-japanese tracking-[0.3em] ${
+          theme.isDark ? 'text-pink-400' : 'text-pink-600 font-bold'
+        } uppercase block mb-1`}>
           思い出の風景
         </span>
-        <h2 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-wide">
+        <h2 className={`text-2xl sm:text-4xl font-serif font-bold ${
+          theme.isDark ? 'text-white' : 'text-zinc-900'
+        } tracking-wide`}>
           Cherished Moments
         </h2>
-        <p className="text-xs sm:text-sm text-zinc-400 mt-2 font-serif italic">
+        <p className={`text-xs sm:text-sm ${
+          theme.isDark ? 'text-zinc-400' : 'text-zinc-600'
+        } mt-2 font-serif italic`}>
           "Each photograph is a blossom preserved in time."
         </p>
         <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-pink-400 to-transparent mx-auto mt-3" />

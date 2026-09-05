@@ -13,10 +13,14 @@ export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, them
     <section className="relative py-16 px-4 sm:px-6 max-w-3xl mx-auto">
       {/* Section Header */}
       <div className="text-center mb-10">
-        <span className="text-xs font-japanese tracking-[0.3em] text-pink-400 uppercase block mb-1">
+        <span className={`text-xs font-japanese tracking-[0.3em] ${
+          theme.isDark ? 'text-pink-400' : 'text-pink-600 font-bold'
+        } uppercase block mb-1`}>
           心からの手紙
         </span>
-        <h2 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-wide">
+        <h2 className={`text-2xl sm:text-4xl font-serif font-bold ${
+          theme.isDark ? 'text-white' : 'text-zinc-900'
+        } tracking-wide`}>
           A Letter From the Heart
         </h2>
         <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-pink-400 to-transparent mx-auto mt-3" />
@@ -28,7 +32,11 @@ export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, them
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative rounded-3xl p-6 sm:p-12 shadow-2xl border border-pink-500/20 bg-[#0f172a]/80 backdrop-blur-xl text-zinc-200 overflow-hidden"
+        className={`relative rounded-3xl p-6 sm:p-12 shadow-2xl border ${
+          theme.isDark 
+            ? 'border-pink-500/20 bg-[#0f172a]/80 text-zinc-200 shadow-pink-950/40' 
+            : 'border-pink-200/80 bg-white/95 text-zinc-800 shadow-xl shadow-pink-100/60'
+        } backdrop-blur-xl overflow-hidden`}
       >
         {/* Subtle Watermark Flower Icon */}
         <div className="absolute top-6 right-6 text-7xl text-pink-500/5 select-none pointer-events-none font-japanese">
@@ -36,8 +44,12 @@ export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, them
         </div>
 
         {/* Top Japanese Stamp */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-6 mb-8">
-          <div className="flex items-center gap-2 text-pink-300">
+        <div className={`flex items-center justify-between border-b ${
+          theme.isDark ? 'border-white/10' : 'border-zinc-200/80'
+        } pb-6 mb-8`}>
+          <div className={`flex items-center gap-2 ${
+            theme.isDark ? 'text-pink-300' : 'text-pink-700 font-semibold'
+          }`}>
             <Feather className="w-4 h-4" />
             <span className="text-xs font-japanese tracking-widest">
               親愛なる {birthday.name} へ
@@ -50,13 +62,19 @@ export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, them
         </div>
 
         {/* Letter Body Message */}
-        <div className="space-y-6 font-serif text-sm sm:text-base leading-relaxed text-zinc-200/90 whitespace-pre-line tracking-wide">
+        <div className={`space-y-6 font-serif text-sm sm:text-base leading-relaxed ${
+          theme.isDark ? 'text-zinc-200/90 font-light' : 'text-zinc-700 font-normal'
+        } whitespace-pre-line tracking-wide`}>
           {birthday.message}
         </div>
 
         {/* Handwriting Signature and Stamp */}
-        <div className="mt-12 pt-6 border-t border-white/10 flex items-center justify-between">
-          <div className="font-handwriting text-2xl sm:text-3xl text-pink-300">
+        <div className={`mt-12 pt-6 border-t ${
+          theme.isDark ? 'border-white/10' : 'border-zinc-200/80'
+        } flex items-center justify-between`}>
+          <div className={`font-handwriting text-2xl sm:text-3xl ${
+            theme.isDark ? 'text-pink-300' : 'text-pink-700'
+          }`}>
             With eternal warmth & blessings
           </div>
 

@@ -50,20 +50,28 @@ export const BirthdayOpening: React.FC<BirthdayOpeningProps> = ({
           transition={{ duration: 0.9, delay: 0.3 }}
           className="space-y-4 mb-8 w-full"
         >
-          <span className="text-xs sm:text-sm font-japanese tracking-[0.35em] text-pink-400 block uppercase font-semibold">
+          <span className={`text-xs sm:text-sm font-japanese tracking-[0.35em] ${
+            theme.isDark ? 'text-pink-400' : 'text-pink-600 font-bold'
+          } block uppercase`}>
             A Special Day for
           </span>
           
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-200 to-pink-100 tracking-normal drop-shadow-md py-2 px-2 leading-[1.3] break-words">
+          <h1 className={`text-4xl sm:text-6xl md:text-7xl font-serif font-bold text-transparent bg-clip-text ${
+            theme.isDark 
+              ? 'bg-gradient-to-r from-pink-300 via-rose-200 to-pink-100 drop-shadow-md' 
+              : 'bg-gradient-to-r from-rose-950 via-pink-900 to-rose-800 drop-shadow-sm'
+          } tracking-normal py-2 px-2 leading-[1.3] break-words`}>
             {name}
           </h1>
 
           <div className="flex items-center justify-center gap-3 pt-2">
-            <span className="h-[1px] w-12 bg-pink-400/40" />
-            <span className="text-sm sm:text-base font-serif italic text-pink-300/90 tracking-widest font-light">
+            <span className={`h-[1px] w-12 ${theme.isDark ? 'bg-pink-400/40' : 'bg-pink-500/40'}`} />
+            <span className={`text-sm sm:text-base font-serif italic ${
+              theme.isDark ? 'text-pink-300/90' : 'text-pink-800 font-medium'
+            } tracking-widest font-light`}>
               お誕生日おめでとう
             </span>
-            <span className="h-[1px] w-12 bg-pink-400/40" />
+            <span className={`h-[1px] w-12 ${theme.isDark ? 'bg-pink-400/40' : 'bg-pink-500/40'}`} />
           </div>
         </motion.div>
 
@@ -72,7 +80,9 @@ export const BirthdayOpening: React.FC<BirthdayOpeningProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-xs sm:text-sm text-zinc-300 max-w-sm font-serif leading-relaxed mb-10 italic"
+          className={`text-xs sm:text-sm ${
+            theme.isDark ? 'text-zinc-300 font-light' : 'text-zinc-600 font-normal'
+          } max-w-sm font-serif leading-relaxed mb-10 italic`}
         >
           "A quiet sanctuary of cherry blossoms and treasured memories, crafted especially for your celebration."
         </motion.p>

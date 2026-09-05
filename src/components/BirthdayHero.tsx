@@ -20,7 +20,9 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="mb-8 hanko-stamp px-4 py-1.5 text-xs sm:text-sm tracking-widest text-sakura-crimson border-sakura-crimson bg-white/10 dark:bg-red-950/20 backdrop-blur-md"
+        className={`mb-8 hanko-stamp px-4 py-1.5 text-xs sm:text-sm tracking-widest text-sakura-crimson border-sakura-crimson ${
+          theme.isDark ? 'bg-white/10' : 'bg-rose-50/90 shadow-sm'
+        } backdrop-blur-md`}
       >
         御祝い • 特別な日
       </motion.div>
@@ -63,18 +65,26 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
         transition={{ duration: 0.8, delay: 0.3 }}
         className="space-y-4 max-w-4xl w-full px-4"
       >
-        <span className="text-xs sm:text-sm font-japanese tracking-[0.35em] text-pink-400 uppercase font-semibold block">
+        <span className={`text-xs sm:text-sm font-japanese tracking-[0.35em] ${
+          theme.isDark ? 'text-pink-400' : 'text-pink-600 font-bold'
+        } uppercase block`}>
           Happy Birthday
         </span>
 
         {/* Name with ample padding & line-height so descenders and dots are never clipped */}
-        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-bold tracking-normal text-transparent bg-clip-text bg-gradient-to-b from-white via-pink-100 to-pink-300 drop-shadow-[0_2px_24px_rgba(255,183,197,0.35)] py-2 px-2 leading-[1.3] select-text break-words">
+        <h1 className={`text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-bold tracking-normal text-transparent bg-clip-text ${
+          theme.isDark 
+            ? 'bg-gradient-to-b from-white via-pink-100 to-pink-300 drop-shadow-[0_2px_24px_rgba(255,183,197,0.35)]'
+            : 'bg-gradient-to-b from-rose-950 via-pink-900 to-rose-800 drop-shadow-[0_2px_12px_rgba(244,63,94,0.15)]'
+        } py-2 px-2 leading-[1.3] select-text break-words`}>
           {birthday.name}
         </h1>
 
         {birthday.birthday && (
-          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-zinc-400 font-mono pt-1">
-            <Calendar className="w-4 h-4 text-pink-400" />
+          <div className={`flex items-center justify-center gap-2 text-xs sm:text-sm ${
+            theme.isDark ? 'text-zinc-400' : 'text-zinc-600 font-medium'
+          } font-mono pt-1`}>
+            <Calendar className={`w-4 h-4 ${theme.isDark ? 'text-pink-400' : 'text-pink-600'}`} />
             <span>{birthday.birthday}</span>
           </div>
         )}
@@ -88,11 +98,15 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
         transition={{ duration: 0.8, delay: 0.5 }}
         className="mt-10 max-w-2xl w-full space-y-3.5 px-4"
       >
-        <p className="text-lg sm:text-2xl font-japanese text-pink-200/95 leading-relaxed font-light tracking-wide">
+        <p className={`text-lg sm:text-2xl font-japanese ${
+          theme.isDark ? 'text-pink-200/95 font-light' : 'text-rose-950/90 font-normal'
+        } leading-relaxed tracking-wide`}>
           "{birthday.japaneseMessage}"
         </p>
 
-        <p className="text-xs sm:text-sm font-serif italic text-zinc-400 leading-relaxed font-light">
+        <p className={`text-xs sm:text-sm font-serif italic ${
+          theme.isDark ? 'text-zinc-400 font-light' : 'text-zinc-600 font-normal'
+        } leading-relaxed`}>
           — {birthday.englishMessage}
         </p>
       </motion.div>
