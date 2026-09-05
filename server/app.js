@@ -26,29 +26,22 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) {}
 }
 
-// Multer storage for image uploads
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `photo-${uniqueSuffix}${ext}`);
-  },
-});
+// Multer memory storage (works in both Node.js server and Vercel serverless functions)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB limit
   fileFilter: (_req, file, cb) => {
+    // Allow images and audio files
     if (
       file.mimetype.startsWith('image/') ||
-      /\.(jpg|jpeg|png|webp|gif|svg|bmp|heic|heif)$/i.test(file.originalname)
+      file.mimetype.startsWith('audio/') ||
+      /\.(jpg|jpeg|png|webp|gif|svg|bmp|heic|heif|mp3|wav|m4a|ogg|aac|flac)$/i.test(file.originalname)
     ) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed (jpg, png, webp, gif, etc.)'));
+      cb(new Error('Only image and audio files are allowed'));
     }
   },
 });
@@ -58,8 +51,12 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Static uploads serving
-app.use('/uploads', express.static(UPLOADS_DIR));
+// Static uploads serving (for local environments if folder exists)
+try {
+  if (fs.existsSync(UPLOADS_DIR)) {
+    app.use('/uploads', express.static(UPLOADS_DIR));
+  }
+} catch (e) {}
 
 // Seed default birthday data (Lê Ngọc Hân)
 export const DEMO_BIRTHDAY = {
@@ -242,6 +239,133 @@ export function generateSlug(name, currentId, list) {
 }
 
 // ==========================================
+// 🌐 PERSISTENT CLOUD UPLOAD DISPATCHER
+// ==========================================
+
+/**
+ * Uploads a file buffer to persistent cloud storage with multi-tier fallback.
+ * Works without any required API keys (uses Catbox CDN by default)
+ * while also supporting Cloudinary, ImgBB, and Supabase.
+ */
+async function uploadToCloudStorage(buffer, originalname, mimetype) {
+  const ext = path.extname(originalname) || (mimetype.startsWith('audio/') ? '.mp3' : '.jpg');
+  const cleanFilename = `sakura-${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
+
+  // Strategy 1: Cloudinary (if configured)
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const cloudPreset = process.env.CLOUDINARY_UPLOAD_PRESET || 'unsigned_preset';
+  if (cloudName) {
+    try {
+      const base64Data = buffer.toString('base64');
+      const dataUri = `data:${mimetype};base64,${base64Data}`;
+      const resourceType = mimetype.startsWith('audio/') ? 'video' : 'image';
+
+      const formData = new FormData();
+      formData.append('file', dataUri);
+      formData.append('upload_preset', cloudPreset);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.secure_url) {
+          return json.secure_url;
+        }
+      }
+    } catch (e) {
+      console.warn('Cloudinary upload error, trying next strategy...', e.message);
+    }
+  }
+
+  // Strategy 2: ImgBB (for images, if configured)
+  const imgbbKey = process.env.IMGBB_API_KEY;
+  if (imgbbKey && mimetype.startsWith('image/')) {
+    try {
+      const base64Data = buffer.toString('base64');
+      const formData = new FormData();
+      formData.append('image', base64Data);
+
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data && (json.data.url || json.data.display_url)) {
+          return json.data.display_url || json.data.url;
+        }
+      }
+    } catch (e) {
+      console.warn('ImgBB upload error, trying next strategy...', e.message);
+    }
+  }
+
+  // Strategy 3: Catbox Free Public CDN (Zero-Config permanent hosting for images and audio)
+  try {
+    const blob = new Blob([buffer], { type: mimetype });
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('fileToUpload', blob, cleanFilename);
+
+    const res = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (res.ok) {
+      const urlText = (await res.text()).trim();
+      if (urlText.startsWith('http://') || urlText.startsWith('https://')) {
+        return urlText.replace(/^http:\/\//i, 'https://');
+      }
+    }
+  } catch (e) {
+    console.warn('Catbox upload error, trying Litterbox fallback...', e.message);
+  }
+
+  // Strategy 4: Litterbox Temporary/Permanent Fallback
+  try {
+    const blob = new Blob([buffer], { type: mimetype });
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('time', '72h');
+    formData.append('fileToUpload', blob, cleanFilename);
+
+    const res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (res.ok) {
+      const urlText = (await res.text()).trim();
+      if (urlText.startsWith('http://') || urlText.startsWith('https://')) {
+        return urlText.replace(/^http:\/\//i, 'https://');
+      }
+    }
+  } catch (e) {
+    console.warn('Litterbox upload error, trying local disk...', e.message);
+  }
+
+  // Strategy 5: Local Disk (for local Node server execution)
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+    const localFilePath = path.join(UPLOADS_DIR, cleanFilename);
+    fs.writeFileSync(localFilePath, buffer);
+    return `/uploads/${cleanFilename}`;
+  } catch (e) {
+    console.warn('Local disk write failed (expected on serverless read-only filesystem)');
+  }
+
+  // Strategy 6: Base64 Data URI (Ultimate fallback)
+  return `data:${mimetype};base64,${buffer.toString('base64')}`;
+}
+
+// ==========================================
 // 🚀 REST API ROUTES
 // ==========================================
 
@@ -255,28 +379,75 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Upload image endpoint
+// Upload media endpoint (Images & Audio files)
 app.post('/api/upload', (req, res) => {
-  upload.single('image')(req, res, (err) => {
+  upload.any()(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ error: err.message || 'Failed to upload image to server' });
+      return res.status(400).json({ error: err.message || 'Failed to process file upload' });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image file uploaded' });
+    const file = req.files && req.files.length > 0 ? req.files[0] : req.file;
+
+    if (!file || !file.buffer) {
+      return res.status(400).json({ error: 'No file data received' });
     }
 
-    const host = req.get('host');
-    const protocol = req.protocol;
-    const relativeUrl = `/uploads/${req.file.filename}`;
-    const absoluteUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    try {
+      const publicUrl = await uploadToCloudStorage(file.buffer, file.originalname, file.mimetype);
 
-    res.json({
-      success: true,
-      filename: req.file.filename,
-      url: relativeUrl,
-      absoluteUrl: absoluteUrl,
-    });
+      const host = req.get('host');
+      const protocol = req.protocol;
+      const isRelative = publicUrl.startsWith('/');
+      const absoluteUrl = isRelative ? `${protocol}://${host}${publicUrl}` : publicUrl;
+
+      res.json({
+        success: true,
+        filename: file.originalname,
+        url: publicUrl,
+        absoluteUrl: absoluteUrl,
+        mimetype: file.mimetype,
+        size: file.size,
+      });
+    } catch (uploadErr) {
+      console.error('File upload failed:', uploadErr);
+      res.status(500).json({ error: 'Failed to upload file to cloud storage' });
+    }
+  });
+});
+
+// Dedicated upload audio endpoint
+app.post('/api/upload-audio', (req, res) => {
+  upload.any()(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Failed to process audio upload' });
+    }
+
+    const file = req.files && req.files.length > 0 ? req.files[0] : req.file;
+
+    if (!file || !file.buffer) {
+      return res.status(400).json({ error: 'No audio file data received' });
+    }
+
+    try {
+      const publicUrl = await uploadToCloudStorage(file.buffer, file.originalname, file.mimetype);
+
+      const host = req.get('host');
+      const protocol = req.protocol;
+      const isRelative = publicUrl.startsWith('/');
+      const absoluteUrl = isRelative ? `${protocol}://${host}${publicUrl}` : publicUrl;
+
+      res.json({
+        success: true,
+        filename: file.originalname,
+        url: publicUrl,
+        absoluteUrl: absoluteUrl,
+        mimetype: file.mimetype,
+        size: file.size,
+      });
+    } catch (uploadErr) {
+      console.error('Audio upload failed:', uploadErr);
+      res.status(500).json({ error: 'Failed to upload audio to cloud storage' });
+    }
   });
 });
 

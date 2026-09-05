@@ -71,6 +71,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   ]);
 
   const [isReady, setIsReady] = useState(false);
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
 
   useEffect(() => {
     if (!isYouTube) {
@@ -81,6 +82,9 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
       setIsPlaying(state.isPlaying);
       setCurrentTime(state.currentTime);
       setIsReady(state.isReady);
+      if (state.isPlaying) {
+        setIsAutoplayBlocked(false);
+      }
     });
     return () => unsub();
   }, [isYouTube]);
@@ -89,31 +93,49 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
     if (autoPlayTrigger && !isPlaying && !isNone) {
       if (isYouTube) {
         youtubeAudioPlayer.play();
-        // Only fallback to ambient if YouTube definitively errors out
         const fallbackTimer = setTimeout(() => {
-          if (!youtubeAudioPlayer.getIsPlaying() && youtubeAudioPlayer.getError()) {
-            console.log('YouTube error encountered, falling back to ambient audio');
-            sakuraAudio.play();
-            setIsPlaying(true);
+          if (!youtubeAudioPlayer.getIsPlaying()) {
+            if (youtubeAudioPlayer.getError()) {
+              console.log('YouTube error encountered, falling back to ambient audio');
+              sakuraAudio.play().then((started) => {
+                if (started) {
+                  setIsPlaying(true);
+                  setIsAutoplayBlocked(false);
+                } else {
+                  setIsAutoplayBlocked(true);
+                }
+              });
+            } else {
+              setIsAutoplayBlocked(true);
+            }
           }
-        }, 4000);
+        }, 3000);
         return () => clearTimeout(fallbackTimer);
       } else {
-        sakuraAudio.play();
-        setIsPlaying(true);
+        sakuraAudio.play().then((started) => {
+          if (started) {
+            setIsPlaying(true);
+            setIsAutoplayBlocked(false);
+          } else {
+            setIsAutoplayBlocked(true);
+          }
+        }).catch(() => {
+          setIsAutoplayBlocked(true);
+        });
       }
     }
   }, [autoPlayTrigger, isPlaying, isYouTube, isNone, isReady]);
 
   if (isNone) return null;
 
-  const handleTogglePlay = () => {
+  const handleTogglePlay = async () => {
+    setIsAutoplayBlocked(false);
     if (isYouTube) {
       const next = youtubeAudioPlayer.toggle();
       setIsPlaying(next);
       if (!next && youtubeAudioPlayer.getError()) {
-        sakuraAudio.play();
-        setIsPlaying(true);
+        const started = await sakuraAudio.play();
+        setIsPlaying(started);
       }
     } else {
       const next = sakuraAudio.toggle();
@@ -279,33 +301,47 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
         </div>
       )}
 
-      <button
-        onClick={() => {
-          if (!isPlaying) {
-            handleTogglePlay();
-          }
-          setShowModal(!showModal);
-        }}
-        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl border transition-all duration-300 ${
-          isPlaying
-            ? 'bg-gradient-to-tr from-pink-600 via-rose-500 to-pink-500 border-pink-300/60 shadow-pink-500/40 scale-105 ring-4 ring-pink-500/20'
-            : theme.isDark
-            ? 'bg-[#0f172a]/90 hover:bg-[#1a233d] border-pink-500/30 text-zinc-300 hover:text-white shadow-black/50'
-            : 'bg-white hover:bg-zinc-50 border-pink-300 text-zinc-700 hover:text-zinc-900 shadow-xl shadow-pink-500/10'
-        }`}
-        title="Background Music Controls"
-      >
-        {isPlaying ? (
-          <div className="flex items-center gap-0.5 h-4">
-            <span className="w-0.5 bg-white rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-3" />
-            <span className="w-0.5 bg-white rounded-full animate-[pulse_1.2s_ease-in-out_infinite] h-4" />
-            <span className="w-0.5 bg-white rounded-full animate-[pulse_0.6s_ease-in-out_infinite] h-2" />
-            <span className="w-0.5 bg-white rounded-full animate-[pulse_1.0s_ease-in-out_infinite] h-3.5" />
-          </div>
-        ) : (
-          <Music className={`w-5 h-5 ${theme.isDark ? 'text-pink-300' : 'text-pink-600'}`} />
+      <div className="flex items-center gap-2">
+        {isAutoplayBlocked && !isPlaying && (
+          <button
+            onClick={handleTogglePlay}
+            className="px-3.5 py-1.5 rounded-full bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold shadow-xl shadow-pink-500/30 flex items-center gap-1.5 animate-bounce transition-transform active:scale-95"
+          >
+            <span>🎵</span>
+            <span>Tap to Play Music</span>
+          </button>
         )}
-      </button>
+
+        <button
+          onClick={() => {
+            if (!isPlaying) {
+              handleTogglePlay();
+            }
+            setShowModal(!showModal);
+          }}
+          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl border transition-all duration-300 ${
+            isPlaying
+              ? 'bg-gradient-to-tr from-pink-600 via-rose-500 to-pink-500 border-pink-300/60 shadow-pink-500/40 scale-105 ring-4 ring-pink-500/20'
+              : isAutoplayBlocked
+              ? 'bg-pink-600 text-white border-white animate-pulse ring-4 ring-pink-500/40 shadow-pink-500/50'
+              : theme.isDark
+              ? 'bg-[#0f172a]/90 hover:bg-[#1a233d] border-pink-500/30 text-zinc-300 hover:text-white shadow-black/50'
+              : 'bg-white hover:bg-zinc-50 border-pink-300 text-zinc-700 hover:text-zinc-900 shadow-xl shadow-pink-500/10'
+          }`}
+          title="Background Music Controls"
+        >
+          {isPlaying ? (
+            <div className="flex items-center gap-0.5 h-4">
+              <span className="w-0.5 bg-white rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-3" />
+              <span className="w-0.5 bg-white rounded-full animate-[pulse_1.2s_ease-in-out_infinite] h-4" />
+              <span className="w-0.5 bg-white rounded-full animate-[pulse_0.6s_ease-in-out_infinite] h-2" />
+              <span className="w-0.5 bg-white rounded-full animate-[pulse_1.0s_ease-in-out_infinite] h-3.5" />
+            </div>
+          ) : (
+            <Music className={`w-5 h-5 ${isAutoplayBlocked ? 'text-white' : theme.isDark ? 'text-pink-300' : 'text-pink-600'}`} />
+          )}
+        </button>
+      </div>
     </div>
   );
 };

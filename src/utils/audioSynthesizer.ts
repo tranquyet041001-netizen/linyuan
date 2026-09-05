@@ -57,14 +57,24 @@ class SakuraAudioEngine {
   public setCustomAudioUrl(url?: string) {
     if (this.customAudio) {
       this.customAudio.pause();
+      this.customAudio.src = '';
       this.customAudio = null;
     }
 
     if (url && url.trim()) {
       this.isCustom = true;
-      this.customAudio = new Audio(url);
-      this.customAudio.loop = true;
-      this.customAudio.volume = this.volume;
+      try {
+        const audio = new Audio();
+        audio.crossOrigin = 'anonymous';
+        audio.preload = 'auto';
+        audio.loop = true;
+        audio.volume = this.volume;
+        audio.src = url.trim();
+        this.customAudio = audio;
+      } catch (e) {
+        console.warn('Failed to initialize custom audio element:', e);
+        this.isCustom = false;
+      }
     } else {
       this.isCustom = false;
     }
@@ -145,15 +155,29 @@ class SakuraAudioEngine {
     }, 3800);
   }
 
-  public play() {
-    if (this.isPlaying) return;
-    this.initContext();
-    this.isPlaying = true;
+  public async play(): Promise<boolean> {
+    if (this.isPlaying) return true;
+    try {
+      this.initContext();
+      this.isPlaying = true;
 
-    if (this.isCustom && this.customAudio) {
-      this.customAudio.play().catch(() => {});
-    } else {
-      this.scheduleNextLoop();
+      if (this.isCustom && this.customAudio) {
+        try {
+          await this.customAudio.play();
+          return true;
+        } catch (audioErr) {
+          console.warn('Custom audio playback blocked or failed:', audioErr);
+          this.isPlaying = false;
+          return false;
+        }
+      } else {
+        this.scheduleNextLoop();
+        return true;
+      }
+    } catch (e) {
+      console.warn('Audio play initialization failed:', e);
+      this.isPlaying = false;
+      return false;
     }
   }
 
@@ -164,17 +188,20 @@ class SakuraAudioEngine {
       this.timerId = null;
     }
     if (this.customAudio) {
-      this.customAudio.pause();
+      try {
+        this.customAudio.pause();
+      } catch (e) {}
     }
   }
 
   public toggle(): boolean {
     if (this.isPlaying) {
       this.pause();
+      return false;
     } else {
       this.play();
+      return true;
     }
-    return this.isPlaying;
   }
 
   public getIsPlaying(): boolean {

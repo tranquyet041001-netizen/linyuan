@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { 
   Music, 
   Play, 
@@ -13,12 +12,14 @@ import {
   Loader2,
   ExternalLink,
   Radio,
-  FileAudio
+  FileAudio,
+  Upload
 } from 'lucide-react';
 import { BirthdayData, MusicType } from '../types/birthday';
 import { extractYouTubeVideoId, formatTime, fetchYouTubeMetadata } from '../utils/youtube';
 import { youtubeAudioPlayer } from '../utils/youtubePlayer';
 import { sakuraAudio } from '../utils/audioSynthesizer';
+import { uploadAudioToApi } from '../utils/api';
 import { DualRangeSlider } from './DualRangeSlider';
 
 interface MusicEditorProps {
@@ -29,8 +30,10 @@ interface MusicEditorProps {
 export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
   const [urlInput, setUrlInput] = useState(data.youtube_url || '');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAudioUploading, setIsAudioUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [isCustomPreviewPlaying, setIsCustomPreviewPlaying] = useState(false);
 
   useEffect(() => {
     const unsub = youtubeAudioPlayer.subscribe((state) => {
@@ -42,8 +45,55 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
     return () => {
       unsub();
       youtubeAudioPlayer.pause();
+      sakuraAudio.pause();
     };
   }, []);
+
+  const handleAudioFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsAudioUploading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await uploadAudioToApi(file, file.name);
+      if (res && res.url) {
+        onChange({
+          music_type: 'upload_mp3',
+          music_url: res.url,
+          music_title: data.music_title || res.title || file.name.replace(/\.[^/.]+$/, ''),
+          music_volume: data.music_volume ?? 65,
+          music_enabled: true,
+        });
+        sakuraAudio.setCustomAudioUrl(res.url);
+      } else {
+        setErrorMessage('Failed to upload audio file. You can also paste a direct public MP3 URL below.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to upload audio file.');
+    } finally {
+      setIsAudioUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleToggleCustomAudioPreview = async () => {
+    if (!data.music_url) return;
+
+    if (isCustomPreviewPlaying) {
+      sakuraAudio.pause();
+      setIsCustomPreviewPlaying(false);
+    } else {
+      sakuraAudio.setCustomAudioUrl(data.music_url);
+      sakuraAudio.setVolume((data.music_volume ?? 65) / 100);
+      const played = await sakuraAudio.play();
+      setIsCustomPreviewPlaying(played);
+      if (!played) {
+        setErrorMessage('Audio playback was prevented by browser autoplay policy. Please tap Preview again.');
+      }
+    }
+  };
 
   const handleLoadYouTube = async () => {
     setErrorMessage(null);
@@ -411,26 +461,112 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
       )}
 
       {data.music_type === 'upload_mp3' && (
-        <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-3 animate-in fade-in duration-200">
-          <label className="text-zinc-300 font-medium block">
-            Direct MP3 / Audio URL
-          </label>
-          <input
-            type="text"
-            value={data.music_url || ''}
-            onChange={(e) => onChange({ music_url: e.target.value })}
-            placeholder="https://example.com/song.mp3"
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500 font-mono"
-          />
+        <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-4 animate-in fade-in duration-200">
           <div>
-            <label className="text-zinc-400 block mb-1">Track Title</label>
+            <label className="text-zinc-300 font-medium block mb-1">
+              Upload Audio File (.mp3, .wav, .m4a, .ogg)
+            </label>
+            <p className="text-[11px] text-zinc-400 mb-3">
+              Upload background music directly from your computer to permanent cloud storage.
+            </p>
+
+            <label className={`w-full py-3 px-4 rounded-xl border text-center text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              isAudioUploading
+                ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
+                : 'bg-zinc-950 hover:bg-zinc-800 border-pink-500/40 hover:border-pink-500 text-pink-300 shadow-lg'
+            }`}>
+              {isAudioUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-pink-400" />
+                  <span>Uploading audio to permanent storage...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 text-pink-400" />
+                  <span>Select Audio File from Computer</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="audio/*,.mp3,.wav,.m4a,.ogg,.aac,.flac"
+                disabled={isAudioUploading}
+                className="hidden"
+                onChange={handleAudioFileUpload}
+              />
+            </label>
+          </div>
+
+          {data.music_url && (
+            <div className="p-3.5 rounded-xl bg-pink-950/30 border border-pink-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileAudio className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-zinc-100 block truncate">
+                      {data.music_title || 'Custom Audio Track'}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono block truncate">
+                      {data.music_url}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleCustomAudioPreview}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all flex-shrink-0 ${
+                    isCustomPreviewPlaying
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                      : 'bg-pink-600 hover:bg-pink-700 text-white shadow-md'
+                  }`}
+                >
+                  {isCustomPreviewPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+                  <span>{isCustomPreviewPlaying ? 'Pause' : 'Preview'}</span>
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-400">Volume</span>
+                <span className="font-mono text-zinc-300 text-[11px]">{data.music_volume ?? 65}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={data.music_volume ?? 65}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  handleVolumeChange(val);
+                  sakuraAudio.setVolume(val / 100);
+                }}
+                className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2 pt-2 border-t border-zinc-800">
+            <label className="text-zinc-400 block text-[11px]">
+              Or Paste Direct Audio URL
+            </label>
             <input
               type="text"
-              value={data.music_title || ''}
-              onChange={(e) => onChange({ music_title: e.target.value })}
-              placeholder="e.g. Spring Sakura Melody"
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500"
+              value={data.music_url || ''}
+              onChange={(e) => {
+                onChange({ music_url: e.target.value });
+                sakuraAudio.setCustomAudioUrl(e.target.value);
+              }}
+              placeholder="https://example.com/audio.mp3"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500 font-mono"
             />
+            <div>
+              <label className="text-zinc-400 block mb-1 text-[11px]">Track Title</label>
+              <input
+                type="text"
+                value={data.music_title || ''}
+                onChange={(e) => onChange({ music_title: e.target.value })}
+                placeholder="e.g. Spring Sakura Melody"
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500"
+              />
+            </div>
           </div>
         </div>
       )}

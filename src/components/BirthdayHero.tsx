@@ -53,6 +53,9 @@ export const BirthdayHero: React.FC<BirthdayHeroProps> = ({ birthday, theme }) =
           <img
             src={birthday.avatar_url}
             alt={birthday.name}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
+            }}
             className="w-full h-full object-cover rounded-full filter brightness-95 contrast-105"
           />
         </div>

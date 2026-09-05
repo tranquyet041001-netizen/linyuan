@@ -61,10 +61,44 @@ export async function uploadImageToApi(file: File | Blob, fileName?: string): Pr
 
     if (res.ok) {
       const data = await res.json();
-      return data.url || data.absoluteUrl || null;
+      return data.absoluteUrl || data.url || null;
+    } else {
+      const errJson = await res.json().catch(() => ({}));
+      console.warn('Image upload API returned error:', errJson);
     }
   } catch (e) {
     console.warn('Image upload to server failed', e);
+  }
+  return null;
+}
+
+export async function uploadAudioToApi(file: File | Blob, fileName?: string): Promise<{ url: string; title: string } | null> {
+  try {
+    const formData = new FormData();
+    const originalName = fileName || (file instanceof File ? file.name : `music-${Date.now()}.mp3`);
+    formData.append('audio', file, originalName);
+
+    const res = await fetch(`${API_BASE}/upload-audio`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const url = data.absoluteUrl || data.url || null;
+      if (url) {
+        const cleanTitle = originalName.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ');
+        return {
+          url,
+          title: cleanTitle || 'Custom Audio Track',
+        };
+      }
+    } else {
+      const errJson = await res.json().catch(() => ({}));
+      console.warn('Audio upload API returned error:', errJson);
+    }
+  } catch (e) {
+    console.warn('Audio upload to server failed', e);
   }
   return null;
 }
