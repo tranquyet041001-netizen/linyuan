@@ -149,7 +149,7 @@ export const HomePage: React.FC = () => {
             className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/10 hover:bg-white/20 border border-pink-400/30 text-white font-medium text-sm sm:text-base backdrop-blur-md flex items-center justify-center gap-2.5 transition-all shadow-lg"
           >
             <Eye className="w-4 h-4 text-pink-300" />
-            <span>View Demo (Lê Ngọc Hân)</span>
+            <span>View Live Demo</span>
           </a>
         </motion.div>
 

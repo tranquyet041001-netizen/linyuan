@@ -389,11 +389,11 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
               className="px-3 py-1 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-xs font-medium flex items-center gap-1 transition-colors shadow-md"
             >
               {isPreviewPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
-              <span>{isPreviewPlaying ? 'Dừng thử' : 'Nghe thử'}</span>
+              <span>{isPreviewPlaying ? 'Stop' : 'Preview'}</span>
             </button>
           </div>
           <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Giai điệu đàn Koto & Piano ngũ âm Nhật Bản thanh tịnh, được tạo trực tiếp bằng Web Audio API. Hoạt động 100% không phụ thuộc video ngoài hay mạng internet.
+            Serene Japanese Koto & ambient pentatonic piano synthesized directly with Web Audio API. 100% offline & zero dependencies.
           </p>
           <div className="pt-2 flex items-center justify-between border-t border-zinc-800">
             <span className="text-[11px] text-zinc-400">Volume</span>
@@ -451,7 +451,7 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
             }}
             className="self-start px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-[11px] font-medium transition-colors"
           >
-            Chuyển sang Nhạc Koto Nhật Bản (100% hoạt động mượt)
+            Switch to Japanese Koto Ambient (100% Reliable)
           </button>
         </div>
       )}

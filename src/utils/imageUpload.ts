@@ -85,7 +85,7 @@ export async function compressImage(
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error('Không thể đọc dữ liệu ảnh qua Canvas'));
+      reject(new Error('Failed to render image onto canvas'));
     };
 
     img.src = objectUrl;
@@ -107,7 +107,7 @@ export async function processAndUploadImage(
 ): Promise<string> {
   // 1. Validation
   if (file.size > 25 * 1024 * 1024) {
-    throw new Error('Dung lượng ảnh quá lớn (>25MB). Vui lòng chọn ảnh nhỏ hơn.');
+    throw new Error('Image file is too large (>25MB). Please select a smaller photo.');
   }
 
   // 2. Try client-side canvas compression first
@@ -143,7 +143,7 @@ export async function processAndUploadImage(
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve((e.target?.result as string) || '');
-      reader.onerror = () => reject(new Error('Không thể đọc tệp ảnh'));
+      reader.onerror = () => reject(new Error('Failed to read image file'));
       reader.readAsDataURL(file);
     });
   }

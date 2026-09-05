@@ -97,7 +97,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             {birthday.status === 'published' ? 'Birthday Surprise is Ready! 🎉' : 'Birthday Saved! 💾'}
           </h3>
           <p className="text-xs sm:text-sm text-zinc-400 max-w-sm mx-auto">
-            Chia sẻ link hoặc quét mã QR để mở trang sinh nhật của <strong className="text-pink-300">{birthday.name}</strong>.
+            Share the link or scan the QR code to open the birthday surprise for <strong className="text-pink-300">{birthday.name}</strong>.
           </p>
         </div>
 
@@ -106,7 +106,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Universal Link (mọi thiết bị)</span>
+              <span>Universal Link (all devices)</span>
             </span>
             <span className="text-zinc-500 font-mono">/{birthday.slug}</span>
           </div>
@@ -139,7 +139,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         <div className="p-5 rounded-2xl bg-zinc-900/80 border border-pink-500/20 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-xs font-semibold text-pink-300">
             <Smartphone className="w-4 h-4" />
-            <span>Quét QR bằng camera điện thoại để mở ngay</span>
+            <span>Scan QR with phone camera to open</span>
           </div>
 
           {qrDataUrl ? (
@@ -153,7 +153,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           )}
 
           <p className="text-[11px] font-mono text-zinc-500">
-            Dành cho: {birthday.name}
+            Dedicated to: {birthday.name}
           </p>
 
           <button
@@ -162,7 +162,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className="mx-auto px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-700"
           >
             <Download className="w-3.5 h-3.5 text-pink-400" />
-            <span>Tải ảnh QR (PNG)</span>
+            <span>Download QR (PNG)</span>
           </button>
         </div>
 
@@ -173,7 +173,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className="w-full py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-pink-500/25 flex items-center justify-center gap-2 transition-transform active:scale-95"
           >
             <Share2 className="w-4 h-4" />
-            <span>Chia sẻ 🎁</span>
+            <span>Share Surprise 🎁</span>
           </button>
 
           <a
@@ -182,7 +182,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             rel="noreferrer"
             className="w-full py-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-colors border border-zinc-700"
           >
-            <span>Xem thử</span>
+            <span>Preview Page</span>
             <ExternalLink className="w-3.5 h-3.5 text-pink-400" />
           </a>
         </div>
@@ -196,7 +196,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             }}
             className="hover:text-pink-300 transition-colors"
           >
-            ← Chỉnh sửa lại
+            ← Back to Editing
           </button>
           <a
             href="#/my-birthdays"

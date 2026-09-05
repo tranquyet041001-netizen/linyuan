@@ -48,7 +48,7 @@ const upload = multer({
     ) {
       cb(null, true);
     } else {
-      cb(new Error('Chỉ chấp nhận tệp hình ảnh (jpg, png, webp, gif, v.v.)'));
+      cb(new Error('Only image files are allowed (jpg, png, webp, gif, etc.)'));
     }
   },
 });
@@ -259,11 +259,11 @@ app.get('/api/health', (_req, res) => {
 app.post('/api/upload', (req, res) => {
   upload.single('image')(req, res, (err) => {
     if (err) {
-      return res.status(400).json({ error: err.message || 'Lỗi khi tải ảnh lên máy chủ' });
+      return res.status(400).json({ error: err.message || 'Failed to upload image to server' });
     }
 
     if (!req.file) {
-      return res.status(400).json({ error: 'Không tìm thấy tệp ảnh nào được gửi lên' });
+      return res.status(400).json({ error: 'No image file uploaded' });
     }
 
     const host = req.get('host');

@@ -5,13 +5,13 @@ export const DEMO_BIRTHDAY: BirthdayData = {
   slug: 'le-ngoc-han-2026',
   status: 'published',
   privacy: 'unlisted',
-  name: 'Lê Ngọc Hân',
+  name: 'Le Ngoc Han',
   age: 25,
   birthday: 'October 4, 2001',
   subtitle: 'A special day for someone truly irreplaceable',
   japaneseMessage: 'あなたの毎日が、桜のように美しくありますように。',
   englishMessage: 'May every day of your life be as radiant and gentle as cherry blossoms in spring.',
-  message: `Dear Ngọc Hân,
+  message: `Dear Ngoc Han,
 
 Happy 25th Birthday! 🌸
 
