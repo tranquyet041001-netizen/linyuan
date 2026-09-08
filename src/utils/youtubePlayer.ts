@@ -1,4 +1,5 @@
 // YouTube IFrame API Singleton Controller
+
 declare global {
   interface Window {
     YT: any;
@@ -64,6 +65,7 @@ class YouTubePlayerController {
     if (!host) {
       host = document.createElement('div');
       host.id = this.hostElementId;
+      // Use a very low z-index and transparent background to guarantee it never covers UI
       host.style.position = 'fixed';
       host.style.bottom = '0px';
       host.style.right = '0px';
@@ -71,8 +73,9 @@ class YouTubePlayerController {
       host.style.height = '120px';
       host.style.opacity = '0.001';
       host.style.pointerEvents = 'none';
-      host.style.zIndex = '-1';
+      host.style.zIndex = '-9999'; // ensure behind any stacking context
       host.style.overflow = 'hidden';
+      host.style.background = 'transparent';
       document.body.appendChild(host);
     }
     return host;
@@ -148,10 +151,8 @@ class YouTubePlayerController {
                 this.endTime = Math.floor(this.duration);
               }
               if (autoPlay) {
-                // Player is already autoplaying muted — now unmute after 800ms
                 this.scheduleUnmute();
               } else {
-                // Set proper volume for when user manually presses play
                 this.player.setVolume(this.volume);
               }
               this.notifyListeners();
@@ -395,6 +396,11 @@ class YouTubePlayerController {
     if (this.unmuteTimer) clearTimeout(this.unmuteTimer);
     this.pause();
     this.listeners.clear();
+    // Remove hidden host element to avoid any stray overlay.
+    const host = document.getElementById(this.hostElementId);
+    if (host && host.parentNode) {
+      host.parentNode.removeChild(host);
+    }
   }
 }
 
