@@ -145,20 +145,11 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
     'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
   ];
 
-  const presetCovers = [
-    'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80',
-    'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1600&q=80',
-    'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?auto=format&fit=crop&w=1600&q=80',
-    'https://images.unsplash.com/photo-1528164344705-475426879c0d?auto=format&fit=crop&w=1600&q=80',
-  ];
-
   // Uploading state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingMemories, setUploadingMemories] = useState<Record<string, boolean>>({});
   const [isBatchUploading, setIsBatchUploading] = useState(false);
   const [editingAvatarUrl, setEditingAvatarUrl] = useState(false);
-  const [editingCoverUrl, setEditingCoverUrl] = useState(false);
   const [memoryUrlInputId, setMemoryUrlInputId] = useState<string | null>(null);
 
   // Avatar Upload Handler
@@ -175,24 +166,6 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
       alert(err.message || 'Failed to upload profile photo');
     } finally {
       setUploadingAvatar(false);
-      e.target.value = '';
-    }
-  };
-
-  // Cover Photo Upload Handler
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setUploadingCover(true);
-      const url = await processAndUploadImage(file, { maxWidth: 960, maxHeight: 540, quality: 0.75 });
-      setFormData((prev) => ({ ...prev, cover_url: url }));
-      showToast('✓ Cover photo uploaded successfully!');
-    } catch (err: any) {
-      alert(err.message || 'Failed to upload cover photo');
-    } finally {
-      setUploadingCover(false);
       e.target.value = '';
     }
   };
@@ -672,105 +645,6 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                   </div>
                 </div>
 
-                {/* Cover Photo */}
-                <div className="space-y-2 pt-3 border-t border-zinc-800/80">
-                  <div className="flex items-center justify-between">
-                    <label className="text-zinc-400 block text-xs font-medium">Cover Banner Photo</label>
-                    <button
-                      type="button"
-                      onClick={() => setEditingCoverUrl(!editingCoverUrl)}
-                      className="text-[11px] text-pink-400 hover:text-pink-300 flex items-center gap-1 transition-colors"
-                    >
-                      <LinkIcon className="w-3 h-3" />
-                      <span>{editingCoverUrl ? 'Hide URL' : 'Paste Cover URL'}</span>
-                    </button>
-                  </div>
-
-                  {editingCoverUrl && (
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-zinc-950 border border-zinc-800 animate-in fade-in">
-                      <input
-                        type="url"
-                        value={formData.cover_url || ''}
-                        onChange={(e) => setFormData({ ...formData, cover_url: e.target.value })}
-                        className="flex-1 bg-transparent px-2 py-1 text-zinc-100 text-xs focus:outline-none"
-                        placeholder="https://images.unsplash.com/..."
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setEditingCoverUrl(false)}
-                        className="px-2.5 py-1 rounded-lg bg-pink-600 text-white text-xs font-medium"
-                      >
-                        Done
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-24 h-12 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-800 flex-shrink-0 group">
-                      <img
-                        src={formData.cover_url || presetCovers[0]}
-                        alt="Cover Preview"
-                        className="w-full h-full object-cover"
-                      />
-                      {uploadingCover && (
-                        <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-pink-300">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        </div>
-                      )}
-                      <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                        <Camera className="w-3.5 h-3.5 text-white" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={uploadingCover}
-                          className="hidden"
-                          onChange={handleCoverUpload}
-                        />
-                      </label>
-                    </div>
-
-                    <label className={`flex-1 cursor-pointer py-2 px-3 rounded-xl border text-center text-xs font-medium flex items-center justify-center gap-2 transition-all ${
-                      uploadingCover 
-                        ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed' 
-                        : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-700 hover:border-pink-500/50 text-zinc-200'
-                    }`}>
-                      {uploadingCover ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-400" />
-                          <span>Uploading cover...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3.5 h-3.5 text-pink-400" />
-                          <span>Upload Cover Photo</span>
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={uploadingCover}
-                        className="hidden"
-                        onChange={handleCoverUpload}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[10px] text-zinc-500">Presets:</span>
-                    {presetCovers.map((url, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, cover_url: url })}
-                        className={`w-10 h-6 rounded-md overflow-hidden border-2 transition-all ${
-                          formData.cover_url === url ? 'border-pink-500 scale-105' : 'border-transparent opacity-60 hover:opacity-100'
-                        }`}
-                      >
-                        <img src={url} alt="Preset Cover" className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Japanese Quotes & Greetings */}
