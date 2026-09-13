@@ -83,8 +83,13 @@ export function saveStoredBirthday(data: BirthdayData, isPublish = false): Birth
     const existingIndex = all.findIndex((b) => b.id === data.id);
 
     let slug = data.slug;
-    if (!slug || existingIndex === -1) {
+    if (!slug) {
       slug = generateUniqueSlug(data.name, data.id, all);
+    } else {
+      const isTaken = all.some((b) => b.slug === slug && b.id !== data.id);
+      if (isTaken) {
+        slug = generateUniqueSlug(data.name, data.id, all);
+      }
     }
 
     const now = new Date().toISOString();
@@ -118,7 +123,8 @@ export function saveStoredBirthday(data: BirthdayData, isPublish = false): Birth
         localStorage.setItem(STORAGE_KEY, JSON.stringify([updatedRecord]));
       }
     }
-    clearAutoSaveDraft();
+    // Keep draft synchronized so refresh or page navigation does not lose changes
+    saveAutoSaveDraft(updatedRecord);
 
     // Async sync to backend
     saveBirthdayToApi(updatedRecord).catch(() => {});

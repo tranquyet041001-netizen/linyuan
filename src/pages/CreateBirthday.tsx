@@ -13,6 +13,7 @@ import {
   RotateCcw, 
   Upload, 
   ArrowLeft, 
+  ArrowRight,
   Music, 
   User, 
   Feather,
@@ -47,27 +48,74 @@ interface CreateBirthdayProps {
   editBirthdayId?: string;
 }
 
+function ensureBirthdayDefaults(data: Partial<BirthdayData>): BirthdayData {
+  return {
+    ...DEMO_BIRTHDAY,
+    ...data,
+    name: data.name !== undefined ? data.name : DEMO_BIRTHDAY.name,
+    age: (data.age !== undefined && data.age !== null && data.age !== '') ? data.age : (DEMO_BIRTHDAY.age ?? 25),
+    birthday: data.birthday !== undefined ? data.birthday : DEMO_BIRTHDAY.birthday,
+    subtitle: data.subtitle !== undefined ? data.subtitle : DEMO_BIRTHDAY.subtitle,
+    japaneseMessage: data.japaneseMessage !== undefined ? data.japaneseMessage : DEMO_BIRTHDAY.japaneseMessage,
+    englishMessage: data.englishMessage !== undefined ? data.englishMessage : DEMO_BIRTHDAY.englishMessage,
+    message: data.message !== undefined ? data.message : DEMO_BIRTHDAY.message,
+    closingWish: data.closingWish !== undefined ? data.closingWish : DEMO_BIRTHDAY.closingWish,
+    avatar_url: data.avatar_url || DEMO_BIRTHDAY.avatar_url,
+    cover_url: data.cover_url || DEMO_BIRTHDAY.cover_url,
+    theme: data.theme || DEMO_BIRTHDAY.theme,
+    show_timeline: data.show_timeline !== false,
+    show_memories: data.show_memories !== false,
+    music_type: data.music_type || DEMO_BIRTHDAY.music_type,
+    youtube_url: data.youtube_url !== undefined ? data.youtube_url : DEMO_BIRTHDAY.youtube_url,
+    youtube_video_id: data.youtube_video_id !== undefined ? data.youtube_video_id : DEMO_BIRTHDAY.youtube_video_id,
+    music_title: data.music_title !== undefined ? data.music_title : DEMO_BIRTHDAY.music_title,
+    music_duration: data.music_duration !== undefined ? data.music_duration : DEMO_BIRTHDAY.music_duration,
+    music_start_time: data.music_start_time !== undefined ? data.music_start_time : DEMO_BIRTHDAY.music_start_time,
+    music_end_time: data.music_end_time !== undefined ? data.music_end_time : DEMO_BIRTHDAY.music_end_time,
+    music_volume: data.music_volume !== undefined ? data.music_volume : DEMO_BIRTHDAY.music_volume,
+    music_loop: data.music_loop !== false,
+    music_enabled: data.music_enabled !== false,
+    start_with_opening: data.start_with_opening !== false,
+    music_url: data.music_url || DEMO_BIRTHDAY.music_url,
+    sakura_settings: {
+      ...DEMO_BIRTHDAY.sakura_settings,
+      ...(data.sakura_settings || {}),
+    },
+    animations: {
+      ...DEMO_BIRTHDAY.animations,
+      ...(data.animations || {}),
+    },
+    memories: (data.memories && data.memories.length > 0) ? data.memories : DEMO_BIRTHDAY.memories,
+    timeline: (data.timeline && data.timeline.length > 0) ? data.timeline : DEMO_BIRTHDAY.timeline,
+  };
+}
+
 export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }) => {
   const [formData, setFormData] = useState<BirthdayData>(() => {
     if (editBirthdayId) {
       const existing = getStoredBirthday(editBirthdayId);
-      if (existing) return existing;
+      if (existing) return ensureBirthdayDefaults(existing);
     }
 
     const hash = window.location.hash;
-    if (hash.includes('?id=')) {
-      const id = hash.split('?id=')[1];
+    if (hash.includes('/edit/')) {
+      const id = hash.replace('#/edit/', '').split('?')[0];
       const existing = getStoredBirthday(id);
-      if (existing) return existing;
+      if (existing) return ensureBirthdayDefaults(existing);
+    }
+    if (hash.includes('?id=')) {
+      const id = hash.split('?id=')[1]?.split('&')[0];
+      const existing = getStoredBirthday(id);
+      if (existing) return ensureBirthdayDefaults(existing);
     }
 
     const draft = getAutoSaveDraft();
     if (draft && draft.data && draft.data.id !== 'demo-le-ngoc-han-2026') {
-      return draft.data;
+      return ensureBirthdayDefaults(draft.data);
     }
 
     const newId = `bday-${Date.now()}`;
-    return {
+    return ensureBirthdayDefaults({
       ...DEMO_BIRTHDAY,
       id: newId,
       slug: `birthday-${Math.random().toString(36).substring(2, 7)}`,
@@ -76,7 +124,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
       show_timeline: true,
       show_memories: true,
       created_at: new Date().toISOString(),
-    };
+    });
   });
 
   const [activeTab, setActiveTab] = useState<'content' | 'memories' | 'timeline' | 'music' | 'theme' | 'sakura'>('content');
@@ -91,14 +139,17 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
   useEffect(() => {
     const hash = window.location.hash;
     let targetId = editBirthdayId;
+    if (!targetId && hash.includes('/edit/')) {
+      targetId = hash.replace('#/edit/', '').split('?')[0];
+    }
     if (!targetId && hash.includes('?id=')) {
-      targetId = hash.split('?id=')[1];
+      targetId = hash.split('?id=')[1]?.split('&')[0];
     }
 
     if (targetId) {
       const existing = getStoredBirthday(targetId);
       if (existing) {
-        setFormData(existing);
+        setFormData(ensureBirthdayDefaults(existing));
       }
     }
   }, [editBirthdayId]);
@@ -310,6 +361,10 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
     }
     const saved = saveStoredBirthday({ ...formData, status: 'draft' }, false);
     setFormData(saved);
+    saveAutoSaveDraft(saved);
+    if (!window.location.hash.includes(saved.id)) {
+      window.history.replaceState(null, '', `#/edit/${saved.id}`);
+    }
     showToast('✓ Draft saved successfully!');
   };
 
@@ -321,6 +376,10 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
     const saved = saveStoredBirthday(formData, true);
     setFormData(saved);
+    saveAutoSaveDraft(saved);
+    if (!window.location.hash.includes(saved.id)) {
+      window.history.replaceState(null, '', `#/edit/${saved.id}`);
+    }
     setShowShareModal(true);
   };
 
@@ -438,83 +497,108 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
       {/* Main Studio Body (Split Editor & Live Preview) */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Side: Customization Controls & Tabs */}
-        <div className={`w-full lg:w-[480px] xl:w-[520px] bg-[#0d1326] border-r border-zinc-800 flex flex-col h-[calc(100vh-64px)] overflow-y-auto ${
+        <div className={`w-full lg:w-[480px] xl:w-[520px] bg-[#0d1326] border-r border-zinc-800 flex flex-col h-[calc(100vh-64px)] overflow-hidden ${
           mobileViewMode === 'preview' ? 'hidden lg:flex' : 'flex'
         }`}>
-          {/* Editor Tabs Navigation */}
-          <div className="p-2 border-b border-zinc-800/80 flex lg:grid lg:grid-cols-6 gap-1 overflow-x-auto no-scrollbar sticky top-0 bg-[#0d1326] z-20">
-            <button
-              onClick={() => setActiveTab('content')}
-              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
-                activeTab === 'content'
-                  ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
-                  : 'text-zinc-400 hover:bg-zinc-800/60'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>Details</span>
-            </button>
+          {/* Editor Tabs Navigation: Permanently pinned at top, NEVER scrolls out of view */}
+          <div className="flex-shrink-0 p-2 sm:p-2.5 border-b border-zinc-800 bg-[#0d1326] z-30 shadow-md">
+            <div className="grid grid-cols-6 gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('content')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+                  activeTab === 'content'
+                    ? 'bg-pink-950/70 text-pink-300 border border-pink-600/60 shadow-sm shadow-pink-500/20 font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="truncate">Details</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('memories')}
-              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
-                activeTab === 'memories'
-                  ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
-                  : 'text-zinc-400 hover:bg-zinc-800/60'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Photos</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('memories')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all relative ${
+                  activeTab === 'memories'
+                    ? 'bg-pink-950/70 text-pink-300 border border-pink-600/60 shadow-sm shadow-pink-500/20 font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                }`}
+              >
+                <div className="relative">
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  {formData.memories && formData.memories.length > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 px-1 rounded-full bg-pink-600 text-[9px] text-white font-mono leading-tight">
+                      {formData.memories.length}
+                    </span>
+                  )}
+                </div>
+                <span className="truncate">Photos</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('timeline')}
-              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
-                activeTab === 'timeline'
-                  ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
-                  : 'text-zinc-400 hover:bg-zinc-800/60'
-              }`}
-            >
-              <GitCommit className="w-3.5 h-3.5" />
-              <span>Milestones</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('timeline')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all relative ${
+                  activeTab === 'timeline'
+                    ? 'bg-pink-950/70 text-pink-300 border border-pink-600/60 shadow-sm shadow-pink-500/20 font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                }`}
+              >
+                <div className="relative">
+                  <GitCommit className="w-3.5 h-3.5" />
+                  {formData.timeline && formData.timeline.length > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 px-1 rounded-full bg-purple-600 text-[9px] text-white font-mono leading-tight">
+                      {formData.timeline.length}
+                    </span>
+                  )}
+                </div>
+                <span className="truncate">Milestones</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('music')}
-              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
-                activeTab === 'music'
-                  ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
-                  : 'text-zinc-400 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Music className="w-3.5 h-3.5" />
-              <span>Music</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('music')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+                  activeTab === 'music'
+                    ? 'bg-pink-950/70 text-pink-300 border border-pink-600/60 shadow-sm shadow-pink-500/20 font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                }`}
+              >
+                <Music className="w-3.5 h-3.5" />
+                <span className="truncate">Music</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('theme')}
-              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
-                activeTab === 'theme'
-                  ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
-                  : 'text-zinc-400 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Palette className="w-3.5 h-3.5" />
-              <span>Themes</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('theme')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+                  activeTab === 'theme'
+                    ? 'bg-pink-950/70 text-pink-300 border border-pink-600/60 shadow-sm shadow-pink-500/20 font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                }`}
+              >
+                <Palette className="w-3.5 h-3.5" />
+                <span className="truncate">Themes</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('sakura')}
-              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
-                activeTab === 'sakura'
-                  ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
-                  : 'text-zinc-400 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Sakura</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('sakura')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+                  activeTab === 'sakura'
+                    ? 'bg-pink-950/70 text-pink-300 border border-pink-600/60 shadow-sm shadow-pink-500/20 font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span className="truncate">Sakura</span>
+              </button>
+            </div>
           </div>
+
+          {/* Scrollable Form Content Container (Only this scrolls) */}
+          <div className="flex-1 overflow-y-auto overscroll-contain">
 
           {/* Tab 1: Personal Details & Message */}
           {activeTab === 'content' && (
@@ -555,7 +639,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                     <label className="text-zinc-400 block mb-1">Age (Optional)</label>
                     <input
                       type="text"
-                      value={formData.age}
+                      value={formData.age ?? ''}
                       onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                       className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-zinc-100 focus:outline-none focus:border-pink-500 transition-colors"
                       placeholder="e.g. 25"
@@ -566,7 +650,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                     <label className="text-zinc-400 block mb-1">Birthday Date</label>
                     <input
                       type="text"
-                      value={formData.birthday}
+                      value={formData.birthday ?? ''}
                       onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
                       className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-zinc-100 focus:outline-none focus:border-pink-500 transition-colors"
                       placeholder="e.g. October 4, 2001"
@@ -770,6 +854,18 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                     </div>
                   </label>
                 </div>
+              </div>
+
+              {/* Navigation to Next Tab */}
+              <div className="pt-4 border-t border-zinc-800 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('memories')}
+                  className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-pink-600/25 active:scale-95"
+                >
+                  <span>Next: Photo Memories</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           )}
@@ -988,6 +1084,26 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                   </div>
                 </>
               )}
+
+              {/* Navigation Between Tabs */}
+              <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('content')}
+                  className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-700 active:scale-95"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back: Details</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('timeline')}
+                  className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-pink-600/20 active:scale-95"
+                >
+                  <span>Next: Milestones</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -1072,17 +1188,59 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                   </div>
                 </div>
               )}
+
+              {/* Navigation Between Tabs */}
+              <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('memories')}
+                  className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-700 active:scale-95"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back: Photos</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('music')}
+                  className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-pink-600/20 active:scale-95"
+                >
+                  <span>Next: Music</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
 
           {/* Tab 4: Music System (YouTube & Ambient) */}
           {activeTab === 'music' && (
-            <ErrorBoundary fallbackTitle="Không thể nạp trình chỉnh sửa nhạc (Music Editor)">
-              <MusicEditor
-                data={formData}
-                onChange={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
-              />
-            </ErrorBoundary>
+            <div>
+              <ErrorBoundary fallbackTitle="Không thể nạp trình chỉnh sửa nhạc (Music Editor)">
+                <MusicEditor
+                  data={formData}
+                  onChange={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
+                />
+              </ErrorBoundary>
+
+              {/* Navigation Between Tabs */}
+              <div className="px-5 pb-6 pt-2 flex items-center justify-between border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('timeline')}
+                  className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-700 active:scale-95"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back: Milestones</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('theme')}
+                  className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-pink-600/20 active:scale-95"
+                >
+                  <span>Next: Themes</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Tab 5: Themes Selector */}
@@ -1137,6 +1295,26 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Navigation Between Tabs */}
+              <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('music')}
+                  className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-700 active:scale-95"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back: Music</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('sakura')}
+                  className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-pink-600/20 active:scale-95"
+                >
+                  <span>Next: Sakura Effects</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           )}
@@ -1330,8 +1508,31 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                   </label>
                 </div>
               </div>
+
+              {/* Navigation & Publish Action */}
+              <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('theme')}
+                  className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-700 active:scale-95"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back: Themes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePublishBirthday}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-lg shadow-pink-500/25 active:scale-95"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Publish Birthday</span>
+                </button>
+              </div>
             </div>
           )}
+
+          {/* End of Scrollable Form Content */}
+          </div>
         </div>
 
         {/* Right Side: Real-time Live Interactive Preview */}
