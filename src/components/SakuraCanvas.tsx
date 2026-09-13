@@ -44,16 +44,22 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     lastX: 0,
     lastY: 0,
   });
+  const gyroRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const burstRef = useRef<number>(0);
   const animFrameIdRef = useRef<number | null>(null);
 
   const createPetal = useCallback(
     (width: number, height: number, startOffscreen = true): Petal => {
       const z = Math.random();
-      const sizeMultiplier = (settings.petal_size / 50) * (0.6 + z * 0.8);
+      // Foreground bokeh petals (z > 0.85) are larger and dreamy
+      const isForeground = z > 0.85;
+      const isBackground = z < 0.35;
+      
+      const depthScale = isForeground ? 1.4 + (z - 0.85) * 2.0 : isBackground ? 0.5 + z * 0.4 : 0.8 + z * 0.4;
+      const sizeMultiplier = (settings.petal_size / 50) * depthScale;
       const baseSize = (10 + Math.random() * 14) * sizeMultiplier;
       
-      const speedMultiplier = (settings.speed / 50) * (0.6 + z * 0.8);
+      const speedMultiplier = (settings.speed / 50) * (isForeground ? 1.3 : isBackground ? 0.6 : 0.9);
       const windOffset = (settings.wind - 50) / 25;
 
       const isAltColor = Math.random() > 0.4;
@@ -61,7 +67,7 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
 
       return {
         x: Math.random() * (width + 200) - 100,
-        y: startOffscreen ? -Math.random() * height * 0.5 - 20 : Math.random() * height,
+        y: startOffscreen ? -Math.random() * height * 0.5 - 30 : Math.random() * height,
         z,
         size: baseSize,
         baseSize,
@@ -70,13 +76,13 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
         flipAngle: Math.random() * Math.PI,
         flipSpeed: (0.015 + Math.random() * 0.03) * speedMultiplier,
         tiltAngle: (Math.random() - 0.5) * 0.4,
-        fallSpeed: (0.8 + Math.random() * 1.6 + z * 0.8) * speedMultiplier,
+        fallSpeed: (0.8 + Math.random() * 1.5 + z * 0.9) * speedMultiplier,
         horizontalDrift: (0.3 + Math.random() * 0.8 + windOffset) * speedMultiplier,
         oscillationAngle: Math.random() * Math.PI * 2,
         oscillationSpeed: (0.01 + Math.random() * 0.02) * (settings.animation_intensity / 50),
-        opacity: (0.35 + z * 0.55) * (1 - (settings.blur / 200)),
+        opacity: isForeground ? 0.45 : isBackground ? 0.35 : (0.45 + z * 0.45) * (1 - (settings.blur / 200)),
         color,
-        petalType: Math.random() > 0.85 ? 1 : 0,
+        petalType: isForeground ? 2 : Math.random() > 0.85 ? 1 : 0,
       };
     },
     [settings, theme]
@@ -103,7 +109,7 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
       }
 
       const isMobile = width < 768;
-      const baseCount = isMobile ? 35 : 75;
+      const baseCount = isMobile ? 38 : 80;
       const targetCount = Math.floor(baseCount * (settings.density / 50));
 
       const newPetals: Petal[] = [];
@@ -124,6 +130,7 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     }
   }, [burstTrigger]);
 
+  // Mouse & Touch interaction + Mobile Gyroscope / Device Orientation physics
   useEffect(() => {
     if (!interactive) return;
 
@@ -152,12 +159,30 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
       }
     };
 
+    // Device orientation / Gyroscope physics for mobile tilt
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (e.gamma !== null) {
+        // gamma is left-to-right tilt in degrees [-90, 90]
+        gyroRef.current.x = Math.max(-2.5, Math.min(2.5, (e.gamma / 30) * 1.5));
+      }
+      if (e.beta !== null) {
+        // beta is front-to-back tilt [-180, 180]
+        gyroRef.current.y = Math.max(-1.0, Math.min(1.5, ((e.beta - 45) / 45) * 0.8));
+      }
+    };
+
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+    }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchmove', handleTouchMove);
+      if (window.DeviceOrientationEvent) {
+        window.removeEventListener('deviceorientation', handleOrientation);
+      }
     };
   }, [interactive]);
 
@@ -236,6 +261,8 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
 
       const burstForce = burstRef.current * 8.0;
       const mouseInfluenceX = mouseRef.current.vx * 1.5;
+      const gyroX = gyroRef.current.x * 2.2;
+      const gyroY = gyroRef.current.y * 1.0;
 
       const petals = petalsRef.current;
       for (let i = 0; i < petals.length; i++) {
@@ -246,12 +273,12 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
         p.oscillationAngle += p.oscillationSpeed;
 
         const sway = Math.sin(p.oscillationAngle) * (1.2 + p.z * 1.5);
-        const parallaxX = mouseInfluenceX * (0.2 + p.z * 0.8);
+        const parallaxX = (mouseInfluenceX + gyroX) * (0.2 + p.z * 0.9);
         const burstX = burstForce * (1.5 + p.z * 2.0);
         const burstY = burstForce * 1.2;
 
         p.x += p.horizontalDrift + sway + parallaxX + burstX;
-        p.y += p.fallSpeed + burstY;
+        p.y += p.fallSpeed + burstY + gyroY;
 
         if (p.y > height + 40) {
           p.y = -30;
@@ -271,9 +298,15 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
         ctx.scale(scaleX, 1);
         ctx.globalAlpha = p.opacity * (0.7 + burstRef.current * 0.3);
 
-        if (p.z > 0.4) {
+        // Multi-depth bokeh effect
+        if (p.z > 0.85) {
+          // Foreground large bokeh petal
+          ctx.shadowColor = theme.petalShadow || 'rgba(255, 183, 197, 0.6)';
+          ctx.shadowBlur = 10;
+        } else if (p.z > 0.4) {
+          // Midground petal
           ctx.shadowColor = theme.petalShadow;
-          ctx.shadowBlur = (theme.isDark ? 8 : 4) * p.z;
+          ctx.shadowBlur = (theme.isDark ? 7 : 3) * p.z;
         }
 
         drawSakuraPetal(ctx, p, scaleX);

@@ -204,6 +204,34 @@ class SakuraAudioEngine {
     }
   }
 
+  public playCelebrationChime() {
+    try {
+      this.initContext();
+      if (!this.ctx || !this.gainNode) return;
+      const now = this.ctx.currentTime;
+      // Japanese pentatonic chime: D5, F#5, A5, B5, D6, F#6
+      const chimeFrequencies = [587.33, 739.99, 880.0, 987.77, 1174.66, 1479.98];
+      chimeFrequencies.forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const noteGain = this.ctx!.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+        noteGain.gain.setValueAtTime(0, now + idx * 0.08);
+        noteGain.gain.linearRampToValueAtTime(0.2, now + idx * 0.08 + 0.02);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 1.8);
+
+        osc.connect(noteGain);
+        noteGain.connect(this.gainNode!);
+
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 1.9);
+      });
+    } catch (e) {
+      console.warn('Celebration chime failed:', e);
+    }
+  }
+
   public getIsPlaying(): boolean {
     return this.isPlaying;
   }

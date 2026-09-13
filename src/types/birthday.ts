@@ -29,6 +29,7 @@ export interface MemoryItem {
   caption: string;
   year?: string;
   location?: string;
+  note?: string;
 }
 
 export interface TimelineItem {
