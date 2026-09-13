@@ -119,19 +119,27 @@ export const MemoryGallery: React.FC<MemoryGalleryProps> = ({ memories, theme })
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="rounded-2xl overflow-hidden max-h-[60vh] bg-black">
+              <div className="rounded-2xl overflow-hidden max-h-[60vh] bg-black flex items-center justify-center">
                 <img
                   src={selectedPhoto.image_url}
                   alt={selectedPhoto.caption}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1528164344705-475426879c0d?auto=format&fit=crop&w=800&q=80';
+                  }}
                   className="w-full h-full object-contain max-h-[60vh] mx-auto"
                 />
               </div>
 
               <div className="pt-2">
-                <h4 className="font-serif text-base sm:text-lg font-bold text-zinc-900">
-                  {selectedPhoto.caption}
-                </h4>
-                <div className="flex items-center gap-4 text-xs text-zinc-500 mt-1 font-mono">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <h4 className="font-serif text-base sm:text-lg font-bold text-zinc-900">
+                    {selectedPhoto.caption}
+                  </h4>
+                  <span className="text-[11px] font-mono text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full border border-pink-200">
+                    {memories.findIndex((m) => m.id === selectedPhoto.id) + 1} / {memories.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-zinc-500 font-mono">
                   {selectedPhoto.year && <span>Year: {selectedPhoto.year}</span>}
                   {selectedPhoto.location && <span>Location: {selectedPhoto.location}</span>}
                 </div>

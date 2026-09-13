@@ -196,10 +196,18 @@ class YouTubePlayerController {
       if (window.YT && window.YT.Player) {
         create();
       } else {
+        let elapsed = 0;
         const interval = setInterval(() => {
+          elapsed += 100;
           if (window.YT && window.YT.Player) {
             clearInterval(interval);
             create();
+          } else if (elapsed >= 6000) {
+            clearInterval(interval);
+            console.warn('YouTube IFrame API timed out or was blocked.');
+            this.error = 'YouTube player timed out (network or ad blocker).';
+            this.notifyListeners();
+            resolve();
           }
         }, 100);
       }

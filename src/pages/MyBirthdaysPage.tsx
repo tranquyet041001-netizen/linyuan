@@ -239,7 +239,7 @@ export const MyBirthdaysPage: React.FC = () => {
                         </a>
 
                         <a
-                          href={`#/create?id=${item.id}`}
+                          href={`#/edit/${item.id}`}
                           className="py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors border border-zinc-700"
                         >
                           <Edit3 className="w-3.5 h-3.5 text-pink-400" />

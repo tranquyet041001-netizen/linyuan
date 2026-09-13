@@ -6,7 +6,13 @@ const STORAGE_KEY = 'sakura_birthdays_v2';
 const AUTOSAVE_DRAFT_KEY = 'sakura_autosave_draft';
 
 export function generateUniqueSlug(name: string, currentId: string, existingList: BirthdayData[]): string {
-  const baseName = (name || 'birthday')
+  // Normalize Vietnamese diacritics and accented characters (e.g. Lê Ngọc Hân -> le-ngoc-han)
+  const normalized = (name || 'birthday')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd');
+
+  const baseName = normalized
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')

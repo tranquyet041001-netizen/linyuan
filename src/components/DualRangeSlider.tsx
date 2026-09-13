@@ -107,7 +107,9 @@ export const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
             step="1"
             value={startTime}
             onChange={handleStartSlider}
-            className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto cursor-pointer accent-pink-400 h-2 opacity-0 focus:outline-none z-30"
+            className={`absolute inset-0 w-full appearance-none bg-transparent pointer-events-none cursor-pointer h-2 opacity-0 focus:outline-none ${
+              startPercent > 50 ? 'z-30' : 'z-40'
+            } [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6`}
           />
 
           <input
@@ -117,7 +119,9 @@ export const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
             step="1"
             value={endTime || max}
             onChange={handleEndSlider}
-            className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto cursor-pointer accent-rose-500 h-2 opacity-0 focus:outline-none z-30"
+            className={`absolute inset-0 w-full appearance-none bg-transparent pointer-events-none cursor-pointer h-2 opacity-0 focus:outline-none ${
+              startPercent > 50 ? 'z-40' : 'z-30'
+            } [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6`}
           />
 
           <div

@@ -80,6 +80,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
   const [activeTab, setActiveTab] = useState<'content' | 'memories' | 'timeline' | 'music' | 'theme' | 'sakura'>('content');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [mobileViewMode, setMobileViewMode] = useState<'edit' | 'preview'>('edit');
   const [showShareModal, setShowShareModal] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -369,7 +370,32 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
             )}
           </div>
 
-          <div className="hidden sm:flex items-center bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+          {/* Mobile Edit / Preview Switcher */}
+          <div className="flex lg:hidden items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
+            <button
+              onClick={() => setMobileViewMode('edit')}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                mobileViewMode === 'edit'
+                  ? 'bg-pink-600 text-white shadow'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Chỉnh sửa
+            </button>
+            <button
+              onClick={() => setMobileViewMode('preview')}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                mobileViewMode === 'preview'
+                  ? 'bg-pink-600 text-white shadow'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Xem trước</span>
+            </button>
+          </div>
+
+          <div className="hidden lg:flex items-center bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
             <button
               onClick={() => setPreviewDevice('desktop')}
               className={`p-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -411,12 +437,14 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
       {/* Main Studio Body (Split Editor & Live Preview) */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Side: Customization Controls & Tabs */}
-        <div className="w-full lg:w-[480px] xl:w-[520px] bg-[#0d1326] border-r border-zinc-800 flex flex-col h-[calc(100vh-64px)] overflow-y-auto">
+        <div className={`w-full lg:w-[480px] xl:w-[520px] bg-[#0d1326] border-r border-zinc-800 flex flex-col h-[calc(100vh-64px)] overflow-y-auto ${
+          mobileViewMode === 'preview' ? 'hidden lg:flex' : 'flex'
+        }`}>
           {/* Editor Tabs Navigation */}
-          <div className="p-2 border-b border-zinc-800/80 grid grid-cols-6 gap-1 sticky top-0 bg-[#0d1326] z-20">
+          <div className="p-2 border-b border-zinc-800/80 flex lg:grid lg:grid-cols-6 gap-1 overflow-x-auto no-scrollbar sticky top-0 bg-[#0d1326] z-20">
             <button
               onClick={() => setActiveTab('content')}
-              className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
                 activeTab === 'content'
                   ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
                   : 'text-zinc-400 hover:bg-zinc-800/60'
@@ -428,7 +456,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
             <button
               onClick={() => setActiveTab('memories')}
-              className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
                 activeTab === 'memories'
                   ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
                   : 'text-zinc-400 hover:bg-zinc-800/60'
@@ -440,7 +468,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
             <button
               onClick={() => setActiveTab('timeline')}
-              className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
                 activeTab === 'timeline'
                   ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
                   : 'text-zinc-400 hover:bg-zinc-800/60'
@@ -452,7 +480,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
             <button
               onClick={() => setActiveTab('music')}
-              className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
                 activeTab === 'music'
                   ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
                   : 'text-zinc-400 hover:bg-zinc-800/60'
@@ -464,7 +492,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
             <button
               onClick={() => setActiveTab('theme')}
-              className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
                 activeTab === 'theme'
                   ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
                   : 'text-zinc-400 hover:bg-zinc-800/60'
@@ -476,7 +504,7 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
             <button
               onClick={() => setActiveTab('sakura')}
-              className={`py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
+              className={`min-w-[64px] sm:min-w-0 flex-1 flex-shrink-0 py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
                 activeTab === 'sakura'
                   ? 'bg-pink-950/60 text-pink-300 border border-pink-700/50'
                   : 'text-zinc-400 hover:bg-zinc-800/60'
@@ -1304,10 +1332,12 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
         </div>
 
         {/* Right Side: Real-time Live Interactive Preview */}
-        <div className="flex-1 bg-[#050811] p-4 sm:p-6 flex items-center justify-center overflow-hidden relative">
-          {previewDevice === 'mobile' ? (
-            <div className="w-[375px] h-[720px] rounded-[48px] border-[10px] border-zinc-800 shadow-2xl overflow-hidden relative bg-black flex flex-col">
-              <div className="h-6 bg-zinc-800 w-36 mx-auto rounded-b-2xl z-50 flex-shrink-0" />
+        <div className={`flex-1 bg-[#050811] p-2 sm:p-6 flex items-center justify-center overflow-hidden relative h-[calc(100vh-64px)] ${
+          mobileViewMode === 'edit' ? 'hidden lg:flex' : 'flex'
+        }`}>
+          {previewDevice === 'mobile' || mobileViewMode === 'preview' ? (
+            <div className="w-full max-w-[420px] h-full lg:h-[720px] rounded-2xl lg:rounded-[48px] lg:border-[10px] border-zinc-800 shadow-2xl overflow-hidden relative bg-black flex flex-col">
+              <div className="hidden lg:block h-6 bg-zinc-800 w-36 mx-auto rounded-b-2xl z-50 flex-shrink-0" />
               <div className="flex-1 overflow-y-auto">
                 <BirthdayPage initialData={formData} isPreview={true} />
               </div>

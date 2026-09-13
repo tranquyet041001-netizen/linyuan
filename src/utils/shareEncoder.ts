@@ -69,6 +69,7 @@ function minifyBirthdayForUrl(data: BirthdayData): any {
     sm: data.show_memories,
     // Music
     mt: data.music_type,
+    mu: data.music_url,
     yu: data.youtube_url,
     yv: data.youtube_video_id,
     ti: data.music_title,
@@ -108,6 +109,7 @@ function unminifyBirthdayFromUrl(mini: any): BirthdayData {
     show_memories: mini.sm !== false,
     // Music
     music_type: mini.mt || 'youtube',
+    music_url: mini.mu || '',
     youtube_url: mini.yu || '',
     youtube_video_id: mini.yv || '',
     music_title: mini.ti || '',
