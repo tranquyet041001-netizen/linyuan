@@ -13,6 +13,8 @@ import { MusicPlayer } from '../components/MusicPlayer';
 import { getStoredBirthday, saveStoredBirthday } from '../utils/storage';
 import { decodeBirthdayFromUrlPayload } from '../utils/shareEncoder';
 import { fetchBirthdayByIdOrSlug } from '../utils/api';
+import { youtubeAudioPlayer } from '../utils/youtubePlayer';
+import { sakuraAudio } from '../utils/audioSynthesizer';
 
 interface BirthdayPageProps {
   birthdayId?: string;
@@ -132,15 +134,49 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
 
   const theme: ThemeConfig = THEMES[birthday.theme] || THEMES['sakura-night'];
 
+  const handleStartMusic = () => {
+    setAutoPlayAudio(true);
+    if (birthday.music_type === 'youtube' && birthday.youtube_video_id) {
+      youtubeAudioPlayer.play();
+    } else if (birthday.music_type === 'upload_mp3') {
+      sakuraAudio.setCustomAudioUrl(birthday.music_url);
+      sakuraAudio.setVolume((birthday.music_volume ?? 65) / 100);
+      sakuraAudio.play();
+    } else if (birthday.music_type === 'ambient') {
+      sakuraAudio.setVolume((birthday.music_volume ?? 65) / 100);
+      sakuraAudio.play();
+    }
+  };
+
   const handleOpenBirthday = () => {
     setBurstTrigger((prev) => prev + 1);
     setHasOpened(true);
-    setAutoPlayAudio(true);
+    handleStartMusic();
   };
 
   const handleReplayOpening = () => {
     setHasOpened(false);
   };
+
+  // Global User Gesture Unlocker: ANY first tap or click anywhere instantly unlocks background music
+  useEffect(() => {
+    if (isPreview) return;
+
+    const unlockAudio = () => {
+      if (birthday.music_type === 'none') return;
+      handleStartMusic();
+    };
+
+    window.addEventListener('click', unlockAudio, { passive: true, once: true });
+    window.addEventListener('touchstart', unlockAudio, { passive: true, once: true });
+    window.addEventListener('pointerdown', unlockAudio, { passive: true, once: true });
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('pointerdown', unlockAudio);
+    };
+  }, [birthday, isPreview]);
 
   return (
     <div className={`relative min-h-screen ${theme.bgGradient} ${theme.textColor} transition-colors duration-700 overflow-x-hidden selection:bg-pink-500 selection:text-white`}>
@@ -160,6 +196,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
           name={birthday.name}
           theme={theme}
           onOpen={handleOpenBirthday}
+          onStartMusic={handleStartMusic}
         />
       )}
 

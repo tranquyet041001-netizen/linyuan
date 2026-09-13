@@ -7,20 +7,26 @@ interface BirthdayOpeningProps {
   name: string;
   theme: ThemeConfig;
   onOpen: () => void;
+  onStartMusic?: () => void;
 }
 
 export const BirthdayOpening: React.FC<BirthdayOpeningProps> = ({
   name,
   theme,
   onOpen,
+  onStartMusic,
 }) => {
   const [isOpening, setIsOpening] = useState(false);
 
   const handleTrigger = () => {
+    // Synchronously trigger audio playback directly inside user gesture event
+    if (onStartMusic) {
+      onStartMusic();
+    }
     setIsOpening(true);
     setTimeout(() => {
       onOpen();
-    }, 900);
+    }, 850);
   };
 
   return (

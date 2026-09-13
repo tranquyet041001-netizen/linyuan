@@ -48,8 +48,8 @@ export default function App() {
     }
 
     if (currentRoute.startsWith('#/birthday/')) {
-      const id = currentRoute.replace('#/birthday/', '');
-      return <BirthdayPage birthdayId={id || 'mai-2026'} />;
+      const id = currentRoute.replace('#/birthday/', '').split('?')[0];
+      return <BirthdayPage key={id} birthdayId={id || 'mai-2026'} />;
     }
 
     return <HomePage />;

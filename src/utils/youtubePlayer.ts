@@ -31,6 +31,7 @@ class YouTubePlayerController {
   private hostElementId = 'sakura-yt-audio-host';
   private error: string | null = null;
   private unmuteTimer: number | null = null;
+  private pendingPlay = false;
 
   constructor() {
     this.loadYouTubeIframeAPI();
@@ -65,15 +66,14 @@ class YouTubePlayerController {
     if (!host) {
       host = document.createElement('div');
       host.id = this.hostElementId;
-      // Use a very low z-index and transparent background to guarantee it never covers UI
       host.style.position = 'fixed';
-      host.style.bottom = '0px';
-      host.style.right = '0px';
-      host.style.width = '200px';
-      host.style.height = '120px';
-      host.style.opacity = '0.001';
+      host.style.bottom = '1px';
+      host.style.left = '1px';
+      host.style.width = '1px';
+      host.style.height = '1px';
+      host.style.opacity = '0.05';
       host.style.pointerEvents = 'none';
-      host.style.zIndex = '-9999'; // ensure behind any stacking context
+      host.style.zIndex = '1';
       host.style.overflow = 'hidden';
       host.style.background = 'transparent';
       document.body.appendChild(host);
@@ -95,6 +95,9 @@ class YouTubePlayerController {
       this.volume = volume;
       this.isLoop = loop;
       this.error = null;
+      if (autoPlay) {
+        this.pendingPlay = true;
+      }
 
       const create = () => {
         const host = this.ensureHostElement();
@@ -110,7 +113,7 @@ class YouTubePlayerController {
               });
             }
             this.player.setVolume(this.volume);
-            if (autoPlay) {
+            if (autoPlay || this.pendingPlay) {
               this.play();
             }
             resolve();
@@ -159,29 +162,30 @@ class YouTubePlayerController {
               if (this.endTime === 0 && this.duration > 0) {
                 this.endTime = Math.floor(this.duration);
               }
-              if (autoPlay) {
-                this.scheduleUnmute();
-              } else {
-                this.player.setVolume(this.volume);
+              this.player.setVolume(this.volume);
+              if (this.pendingPlay || autoPlay) {
+                this.play();
               }
               this.notifyListeners();
               resolve();
             },
             onStateChange: (event: any) => {
               if (event.data === 1) {
-                // Playing
+                // 1 = Playing
                 this.isPlaying = true;
+                this.pendingPlay = false;
                 this.startTimeChecker();
-              } else {
+              } else if (event.data === 2) {
+                // 2 = Paused
                 this.isPlaying = false;
-                if (event.data === 0) {
-                  // Ended
-                  if (this.isLoop) {
-                    this.seekTo(this.startTime);
-                    this.player.playVideo();
-                  } else {
-                    this.stopTimeChecker();
-                  }
+              } else if (event.data === 0) {
+                // 0 = Ended
+                this.isPlaying = false;
+                if (this.isLoop) {
+                  this.seekTo(this.startTime);
+                  this.player?.playVideo();
+                } else {
+                  this.stopTimeChecker();
                 }
               }
               this.notifyListeners();
@@ -195,6 +199,7 @@ class YouTubePlayerController {
 
               this.error = msg;
               this.isPlaying = false;
+              this.pendingPlay = false;
               this.stopTimeChecker();
               this.notifyListeners();
             },
@@ -234,21 +239,20 @@ class YouTubePlayerController {
         try {
           this.player.unMute();
           this.player.setVolume(this.volume);
-          this.isPlaying = true;
           this.startTimeChecker();
           this.notifyListeners();
         } catch (e) {
           console.warn('Unmute error', e);
         }
       }
-    }, 800);
+    }, 600);
   }
 
   /**
    * Play video muted first, then unmute — bypasses autoplay restrictions.
    */
-  private playMutedThenUnmute() {
-    if (!this.player) return;
+  public playMutedThenUnmute() {
+    if (!this.player || typeof this.player.playVideo !== 'function') return;
     try {
       this.player.mute();
       const cur = this.player.getCurrentTime?.() ?? 0;
@@ -291,27 +295,37 @@ class YouTubePlayerController {
   }
 
   public play() {
-    if (this.player && typeof this.player.playVideo === 'function') {
-      try {
-        const cur = this.player.getCurrentTime?.() ?? 0;
-        if (cur < this.startTime || (this.endTime > 0 && cur >= this.endTime)) {
-          this.player.seekTo(this.startTime, true);
-        }
-        // Direct unmuted play with user interaction token
-        this.player.unMute();
-        this.player.setVolume(this.volume);
-        this.player.playVideo();
-        this.isPlaying = true;
-        this.startTimeChecker();
-        this.notifyListeners();
-      } catch (e) {
-        console.warn('Direct unmuted play failed, trying muted autoplay fallback', e);
-        this.playMutedThenUnmute();
+    this.pendingPlay = true;
+    this.error = null;
+
+    if (!this.player || typeof this.player.playVideo !== 'function') {
+      return;
+    }
+
+    try {
+      const cur = this.player.getCurrentTime?.() ?? 0;
+      if (cur < this.startTime || (this.endTime > 0 && cur >= this.endTime)) {
+        this.player.seekTo(this.startTime, true);
       }
+      this.player.unMute();
+      this.player.setVolume(this.volume);
+      this.player.playVideo();
+      this.startTimeChecker();
+
+      // Check if browser blocked unmuted autoplay: verify playback within 700ms
+      window.setTimeout(() => {
+        if (!this.isPlaying) {
+          this.playMutedThenUnmute();
+        }
+      }, 700);
+    } catch (e) {
+      console.warn('Direct unmuted play failed, trying muted autoplay fallback', e);
+      this.playMutedThenUnmute();
     }
   }
 
   public pause() {
+    this.pendingPlay = false;
     if (this.unmuteTimer) {
       clearTimeout(this.unmuteTimer);
       this.unmuteTimer = null;
@@ -319,13 +333,13 @@ class YouTubePlayerController {
     if (this.player && typeof this.player.pauseVideo === 'function') {
       try {
         this.player.pauseVideo();
-        this.isPlaying = false;
-        this.stopTimeChecker();
-        this.notifyListeners();
       } catch (e) {
         console.warn('Pause error', e);
       }
     }
+    this.isPlaying = false;
+    this.stopTimeChecker();
+    this.notifyListeners();
   }
 
   public toggle(): boolean {

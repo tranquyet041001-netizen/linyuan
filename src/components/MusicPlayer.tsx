@@ -95,23 +95,42 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
         youtubeAudioPlayer.play();
         const fallbackTimer = setTimeout(() => {
           if (!youtubeAudioPlayer.getIsPlaying()) {
-            if (youtubeAudioPlayer.getError()) {
-              console.log('YouTube error encountered, falling back to ambient audio');
-              sakuraAudio.play().then((started) => {
-                if (started) {
-                  setIsPlaying(true);
-                  setIsAutoplayBlocked(false);
-                } else {
-                  setIsAutoplayBlocked(true);
-                }
-              });
-            } else {
-              setIsAutoplayBlocked(true);
-            }
+            // First attempt muted autoplay then unmute (works on strict browser policies)
+            youtubeAudioPlayer.playMutedThenUnmute();
+
+            // If still blocked after 1.5s, fall back to peaceful Koto ambient audio
+            setTimeout(() => {
+              if (!youtubeAudioPlayer.getIsPlaying()) {
+                console.log('YouTube autoplay blocked or unavailable, starting ambient audio');
+                sakuraAudio.setVolume((birthday.music_volume ?? 65) / 100);
+                sakuraAudio.play().then((started) => {
+                  if (started) {
+                    setIsPlaying(true);
+                    setIsAutoplayBlocked(false);
+                  } else {
+                    setIsAutoplayBlocked(true);
+                  }
+                });
+              }
+            }, 1500);
           }
-        }, 3000);
+        }, 2000);
         return () => clearTimeout(fallbackTimer);
-      } else {
+      } else if (isCustomMp3) {
+        sakuraAudio.setCustomAudioUrl(music_url);
+        sakuraAudio.setVolume((birthday.music_volume ?? 65) / 100);
+        sakuraAudio.play().then((started) => {
+          if (started) {
+            setIsPlaying(true);
+            setIsAutoplayBlocked(false);
+          } else {
+            setIsAutoplayBlocked(true);
+          }
+        }).catch(() => {
+          setIsAutoplayBlocked(true);
+        });
+      } else if (isAmbient) {
+        sakuraAudio.setVolume((birthday.music_volume ?? 65) / 100);
         sakuraAudio.play().then((started) => {
           if (started) {
             setIsPlaying(true);
@@ -124,7 +143,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
         });
       }
     }
-  }, [autoPlayTrigger, isPlaying, isYouTube, isNone, isReady]);
+  }, [autoPlayTrigger, isPlaying, isYouTube, isAmbient, isCustomMp3, isNone, isReady, music_url, birthday.music_volume]);
 
   if (isNone) return null;
 
