@@ -122,6 +122,15 @@ class YouTubePlayerController {
 
         this.currentVideoId = videoId;
 
+        if (this.player && typeof this.player.destroy === 'function') {
+          try {
+            this.player.destroy();
+          } catch (e) {
+            console.warn('Error destroying old player', e);
+          }
+          this.player = null;
+        }
+
         host.innerHTML = '<div id="sakura-yt-player-target"></div>';
 
         this.player = new window.YT.Player('sakura-yt-player-target', {

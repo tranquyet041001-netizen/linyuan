@@ -3,6 +3,7 @@ import { HomePage } from './pages/HomePage';
 import { CreateBirthday } from './pages/CreateBirthday';
 import { BirthdayPage } from './pages/BirthdayPage';
 import { MyBirthdaysPage } from './pages/MyBirthdaysPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState<string>(window.location.hash || '#/');
@@ -19,6 +20,9 @@ export default function App() {
       window.location.hash = `#/birthday/${slug}`;
     } else if (pathname === '/my-birthdays' && !window.location.hash) {
       window.location.hash = '#/my-birthdays';
+    } else if (pathname.startsWith('/edit/') && !window.location.hash) {
+      const id = pathname.replace('/edit/', '');
+      window.location.hash = `#/edit/${id}`;
     } else if (pathname === '/create' && !window.location.hash) {
       window.location.hash = '#/create';
     }
@@ -27,23 +31,33 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  if (currentRoute.startsWith('#/my-birthdays')) {
-    return <MyBirthdaysPage />;
-  }
+  const renderContent = () => {
+    if (currentRoute.startsWith('#/my-birthdays')) {
+      return <MyBirthdaysPage />;
+    }
 
-  if (currentRoute.startsWith('#/edit/')) {
-    const id = currentRoute.replace('#/edit/', '');
-    return <CreateBirthday editBirthdayId={id} />;
-  }
+    if (currentRoute.startsWith('#/edit/')) {
+      const id = currentRoute.replace('#/edit/', '').split('?')[0];
+      return <CreateBirthday key={id} editBirthdayId={id} />;
+    }
 
-  if (currentRoute.startsWith('#/create')) {
-    return <CreateBirthday />;
-  }
+    if (currentRoute.startsWith('#/create')) {
+      const hash = window.location.hash;
+      const id = hash.includes('?id=') ? hash.split('?id=')[1]?.split('&')[0] : undefined;
+      return <CreateBirthday key={id || 'create'} editBirthdayId={id} />;
+    }
 
-  if (currentRoute.startsWith('#/birthday/')) {
-    const id = currentRoute.replace('#/birthday/', '');
-    return <BirthdayPage birthdayId={id || 'mai-2026'} />;
-  }
+    if (currentRoute.startsWith('#/birthday/')) {
+      const id = currentRoute.replace('#/birthday/', '');
+      return <BirthdayPage birthdayId={id || 'mai-2026'} />;
+    }
 
-  return <HomePage />;
+    return <HomePage />;
+  };
+
+  return (
+    <ErrorBoundary fallbackTitle="Có sự cố xảy ra khi nạp trang">
+      {renderContent()}
+    </ErrorBoundary>
+  );
 }

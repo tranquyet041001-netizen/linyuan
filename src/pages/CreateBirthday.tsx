@@ -41,6 +41,7 @@ import {
 } from '../utils/storage';
 import { MusicEditor } from '../components/MusicEditor';
 import { ShareModal } from '../components/ShareModal';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 interface CreateBirthdayProps {
   editBirthdayId?: string;
@@ -1076,10 +1077,12 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
 
           {/* Tab 4: Music System (YouTube & Ambient) */}
           {activeTab === 'music' && (
-            <MusicEditor
-              data={formData}
-              onChange={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
-            />
+            <ErrorBoundary fallbackTitle="Không thể nạp trình chỉnh sửa nhạc (Music Editor)">
+              <MusicEditor
+                data={formData}
+                onChange={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Tab 5: Themes Selector */}
@@ -1339,7 +1342,9 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
             <div className="w-full max-w-[420px] h-full lg:h-[720px] rounded-2xl lg:rounded-[48px] lg:border-[10px] border-zinc-800 shadow-2xl overflow-hidden relative bg-black flex flex-col">
               <div className="hidden lg:block h-6 bg-zinc-800 w-36 mx-auto rounded-b-2xl z-50 flex-shrink-0" />
               <div className="flex-1 overflow-y-auto">
-                <BirthdayPage initialData={formData} isPreview={true} />
+                <ErrorBoundary fallbackTitle="Không thể nạp khung xem trước">
+                  <BirthdayPage initialData={formData} isPreview={true} />
+                </ErrorBoundary>
               </div>
             </div>
           ) : (
@@ -1355,7 +1360,9 @@ export const CreateBirthday: React.FC<CreateBirthdayProps> = ({ editBirthdayId }
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto">
-                <BirthdayPage initialData={formData} isPreview={true} />
+                <ErrorBoundary fallbackTitle="Không thể nạp khung xem trước">
+                  <BirthdayPage initialData={formData} isPreview={true} />
+                </ErrorBoundary>
               </div>
             </div>
           )}
