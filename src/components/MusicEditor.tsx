@@ -14,12 +14,15 @@ import {
   ExternalLink,
   Radio,
   FileAudio,
-  Upload
+  Upload,
+  Bell,
+  CloudRain,
+  Disc
 } from 'lucide-react';
-import { BirthdayData, MusicType } from '../types/birthday';
+import { BirthdayData, MusicType, AmbientPresetId } from '../types/birthday';
 import { extractYouTubeVideoId, formatTime, fetchYouTubeMetadata } from '../utils/youtube';
 import { youtubeAudioPlayer } from '../utils/youtubePlayer';
-import { sakuraAudio } from '../utils/audioSynthesizer';
+import { sakuraAudio, AMBIENT_PRESETS } from '../utils/audioSynthesizer';
 import { uploadAudioToApi } from '../utils/api';
 import { DualRangeSlider } from './DualRangeSlider';
 
@@ -35,6 +38,7 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [isCustomPreviewPlaying, setIsCustomPreviewPlaying] = useState(false);
+  const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
 
   useEffect(() => {
     const unsub = youtubeAudioPlayer.subscribe((state) => {
@@ -183,6 +187,7 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
   const handleVolumeChange = (vol: number) => {
     onChange({ music_volume: vol });
     youtubeAudioPlayer.setVolume(vol);
+    sakuraAudio.setVolume(vol / 100);
   };
 
   const handleLoopChange = (loop: boolean) => {
@@ -190,24 +195,67 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
     youtubeAudioPlayer.setLoop(loop);
   };
 
+  const handleSelectAmbientPreset = (presetId: AmbientPresetId) => {
+    onChange({
+      music_type: 'ambient',
+      ambient_preset: presetId,
+      music_title: AMBIENT_PRESETS[presetId].name,
+    });
+    sakuraAudio.setPreset(presetId);
+    if (isAmbientPlaying) {
+      sakuraAudio.playPreset(presetId);
+    }
+  };
+
+  const handleToggleAmbient = () => {
+    const activePreset = data.ambient_preset || 'zen-bell';
+    sakuraAudio.setPreset(activePreset);
+    sakuraAudio.setVolume((data.music_volume ?? 65) / 100);
+    const next = sakuraAudio.toggle();
+    setIsAmbientPlaying(next);
+  };
+
+  const isAudioActive = (data.music_type === 'youtube' && isPreviewPlaying) || 
+                        (data.music_type === 'ambient' && isAmbientPlaying) ||
+                        (data.music_type === 'upload_mp3' && isCustomPreviewPlaying);
+
   return (
     <div className="p-5 space-y-6 text-xs text-zinc-300">
-      <div>
-        <h3 className="font-semibold text-sm text-pink-300 uppercase tracking-wider flex items-center gap-2 mb-1">
-          <Music className="w-4 h-4" />
-          <span>Background Music System</span>
-        </h3>
-        <p className="text-zinc-400 text-[11px]">
-          Choose the atmosphere soundtrack that accompanies your Sakura experience
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-sm text-pink-300 uppercase tracking-wider flex items-center gap-2 mb-1">
+            <Music className="w-4 h-4" />
+            <span>Soundtrack Studio</span>
+          </h3>
+          <p className="text-zinc-400 text-[11px]">
+            Choose the atmosphere soundtrack accompanying your Sakura experience
+          </p>
+        </div>
+
+        {/* Audio Equalizer Playback Visualizer */}
+        <div className="flex items-end justify-center gap-0.5 sm:gap-1 h-6 px-2.5 py-1 bg-black/40 rounded-lg border border-pink-500/20">
+          {[10, 18, 8, 22, 14, 20, 10, 16].map((h, i) => (
+            <span
+              key={i}
+              className={`w-1 bg-gradient-to-t from-pink-600 to-rose-400 rounded-full transition-all duration-150 ${
+                isAudioActive ? 'animate-pulse' : 'opacity-30'
+              }`}
+              style={{
+                height: isAudioActive ? `${Math.max(4, (h * (data.music_volume ?? 65)) / 100)}px` : '4px',
+                animationDelay: `${i * 100}ms`,
+              }}
+            />
+          ))}
+        </div>
       </div>
 
+      {/* Music Source Selector */}
       <div className="space-y-2">
         <label className="text-zinc-400 font-medium block">Music Source</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
+            { id: 'ambient', label: 'Ambient Presets', icon: Sparkles, badge: 'Cyber-Zen' },
             { id: 'youtube', label: 'YouTube Music', icon: Youtube, badge: 'Popular' },
-            { id: 'ambient', label: 'Japanese Koto', icon: Sparkles },
             { id: 'upload_mp3', label: 'Custom MP3', icon: FileAudio },
             { id: 'none', label: 'No Music', icon: Radio },
           ].map((src) => {
@@ -222,6 +270,14 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
                   onChange({ music_type: src.id as MusicType });
                   if (src.id !== 'youtube') {
                     youtubeAudioPlayer.pause();
+                    setIsPreviewPlaying(false);
+                  }
+                  if (src.id !== 'ambient') {
+                    sakuraAudio.pause();
+                    setIsAmbientPlaying(false);
+                  }
+                  if (src.id !== 'upload_mp3') {
+                    setIsCustomPreviewPlaying(false);
                   }
                 }}
                 className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all text-center relative overflow-hidden ${
@@ -243,6 +299,108 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
         </div>
       </div>
 
+      {/* AMBIENT PRESET SELECTOR (4 Presets) */}
+      {data.music_type === 'ambient' && (
+        <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between">
+            <span className="text-zinc-300 font-medium text-xs flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+              <span>Neo-Japanese Ambient Synthesizer Presets</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleToggleAmbient}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md ${
+                isAmbientPlaying
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                  : 'bg-pink-600 hover:bg-pink-700 text-white'
+              }`}
+            >
+              {isAmbientPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <span>{isAmbientPlaying ? 'Stop Ambient' : 'Preview Ambient'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(Object.keys(AMBIENT_PRESETS) as AmbientPresetId[]).map((presetKey) => {
+              const preset = AMBIENT_PRESETS[presetKey];
+              const isSelected = (data.ambient_preset || 'zen-bell') === presetKey;
+
+              const getIcon = () => {
+                switch (presetKey) {
+                  case 'zen-bell': return Bell;
+                  case 'rain-koto': return CloudRain;
+                  case 'lofi-beats': return Disc;
+                  default: return Sparkles;
+                }
+              };
+              const PresetIcon = getIcon();
+
+              return (
+                <div
+                  key={presetKey}
+                  onClick={() => handleSelectAmbientPreset(presetKey)}
+                  className={`cursor-pointer p-3.5 rounded-2xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+                    isSelected
+                      ? 'border-pink-500 ring-2 ring-pink-500/30 bg-pink-950/40 shadow-lg'
+                      : 'border-zinc-800 bg-zinc-900/80 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-pink-500/20 text-pink-300' : 'bg-zinc-800 text-zinc-400'}`}>
+                        <PresetIcon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-xs text-zinc-100 block">
+                          {preset.name}
+                        </span>
+                        <span className="text-[10px] font-japanese text-pink-300">
+                          {preset.japaneseName}
+                        </span>
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-600 text-white">
+                        Active
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2 mt-1">
+                    {preset.description}
+                  </p>
+                  
+                  <div className="mt-2 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[9px] text-zinc-500 font-mono">
+                    <span>{preset.mood}</span>
+                    <span className="text-pink-400 font-sans font-medium">Web Audio API</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-300 font-medium flex items-center gap-1.5">
+                <Volume2 className="w-3.5 h-3.5 text-pink-400" />
+                <span>Ambient Volume</span>
+              </span>
+              <span className="font-mono text-zinc-400">{data.music_volume ?? 65}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={data.music_volume ?? 65}
+              onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
+              className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-pink-500"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* YOUTUBE MUSIC CONTROLS */}
       {data.music_type === 'youtube' && (
         <div className="space-y-5 pt-2 animate-in fade-in duration-200">
           {!data.youtube_video_id ? (
@@ -336,7 +494,7 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
               <div className="pt-2 border-t border-zinc-800">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-zinc-200">
-                    Select Section to Play
+                    Select Section to Play (Trimming)
                   </span>
                   <span className="text-[10px] font-mono text-pink-400">
                     {formatTime(data.music_start_time || 0)} - {formatTime(data.music_end_time || data.music_duration || 0)}
@@ -424,43 +582,7 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
         </div>
       )}
 
-      {data.music_type === 'ambient' && (
-        <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-3 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-pink-300">
-              <Sparkles className="w-4 h-4" />
-              <span className="font-semibold text-xs">Japanese Ambient Synthesizer (Insen scale)</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                const next = sakuraAudio.toggle();
-                setIsPreviewPlaying(next);
-              }}
-              className="px-3 py-1 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-xs font-medium flex items-center gap-1 transition-colors shadow-md"
-            >
-              {isPreviewPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
-              <span>{isPreviewPlaying ? 'Stop' : 'Preview'}</span>
-            </button>
-          </div>
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
-            Serene Japanese Koto & ambient pentatonic piano synthesized directly with Web Audio API. 100% offline & zero dependencies.
-          </p>
-          <div className="pt-2 flex items-center justify-between border-t border-zinc-800">
-            <span className="text-[11px] text-zinc-400">Volume</span>
-            <span className="font-mono text-zinc-300">{data.music_volume ?? 65}%</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={data.music_volume ?? 65}
-            onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
-            className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-pink-500"
-          />
-        </div>
-      )}
-
+      {/* CUSTOM MP3 CONTROLS */}
       {data.music_type === 'upload_mp3' && (
         <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-4 animate-in fade-in duration-200">
           <div>
@@ -537,7 +659,6 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
                   handleVolumeChange(val);
-                  sakuraAudio.setVolume(val / 100);
                 }}
                 className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-pink-500"
               />
@@ -582,13 +703,14 @@ export const MusicEditor: React.FC<MusicEditorProps> = ({ data, onChange }) => {
             type="button"
             onClick={() => {
               setErrorMessage(null);
-              onChange({ music_type: 'ambient' });
-              sakuraAudio.play();
-              setIsPreviewPlaying(true);
+              onChange({ music_type: 'ambient', ambient_preset: 'zen-bell' });
+              sakuraAudio.setPreset('zen-bell');
+              sakuraAudio.playPreset('zen-bell');
+              setIsAmbientPlaying(true);
             }}
             className="self-start px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-[11px] font-medium transition-colors"
           >
-            Switch to Japanese Koto Ambient (100% Reliable)
+            Switch to Japanese Zen Bell Ambient (100% Offline & Reliable)
           </button>
         </div>
       )}

@@ -27,7 +27,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   initialData,
   isPreview = false,
 }) => {
-  const [birthday, setBirthday] = useState<BirthdayData>(() => {
+  const [stateBirthday, setStateBirthday] = useState<BirthdayData>(() => {
     if (initialData) return initialData;
 
     // Check for encoded URL payload in hash or query parameters
@@ -62,6 +62,10 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
     return DEMO_BIRTHDAY;
   });
 
+  // Direct initialData bypass in preview mode:
+  // Synchronously evaluates to initialData during preview renders — eliminates 1-tick useEffect delay!
+  const birthday: BirthdayData = (isPreview && initialData) ? initialData : stateBirthday;
+
   const [hasOpened, setHasOpened] = useState(!birthday.animations?.cinematicOpening || isPreview);
   const [burstTrigger, setBurstTrigger] = useState(0);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
@@ -78,8 +82,13 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   }, [birthday.animations?.cinematicOpening, isPreview]);
 
   useEffect(() => {
+    if (isPreview && initialData) {
+      // Direct bypass active; no state synchronization tick required
+      return;
+    }
+
     if (initialData) {
-      setBirthday(initialData);
+      setStateBirthday(initialData);
       return;
     }
 
@@ -101,7 +110,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
     if (payload) {
       const decoded = decodeBirthdayFromUrlPayload(payload);
       if (decoded) {
-        setBirthday(decoded);
+        setStateBirthday(decoded);
         try { saveStoredBirthday(decoded, true); } catch (e) {}
         return;
       }
@@ -111,14 +120,14 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
     if (birthdayId) {
       const stored = getStoredBirthday(birthdayId);
       if (stored) {
-        setBirthday(stored);
+        setStateBirthday(stored);
         return;
       }
 
       // 3. Fallback: Fetch from Backend REST API
       fetchBirthdayByIdOrSlug(birthdayId).then((fromApi) => {
         if (fromApi) {
-          setBirthday(fromApi);
+          setStateBirthday(fromApi);
           try { saveStoredBirthday(fromApi, true); } catch (e) {}
         } else if (
           birthdayId === 'le-ngoc-han-2026' || 
@@ -126,11 +135,11 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
           birthdayId === 'mai-2026' || 
           birthdayId === 'demo'
         ) {
-          setBirthday(DEMO_BIRTHDAY);
+          setStateBirthday(DEMO_BIRTHDAY);
         }
       });
     }
-  }, [birthdayId, initialData]);
+  }, [birthdayId, initialData, isPreview]);
 
   const theme: ThemeConfig = THEMES[birthday.theme] || THEMES['sakura-night'];
 
@@ -143,6 +152,9 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
       sakuraAudio.setVolume((birthday.music_volume ?? 65) / 100);
       sakuraAudio.play();
     } else if (birthday.music_type === 'ambient') {
+      if (birthday.ambient_preset) {
+        sakuraAudio.setPreset(birthday.ambient_preset);
+      }
       sakuraAudio.setVolume((birthday.music_volume ?? 65) / 100);
       sakuraAudio.play();
     }
@@ -203,7 +215,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
       {/* 3. Main Birthday Journey Content */}
       <main className={`relative z-20 transition-opacity duration-1000 ${hasOpened ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <BirthdayHero birthday={birthday} theme={theme} />
-        <BirthdayMessage birthday={birthday} theme={theme} />
+        <BirthdayMessage birthday={birthday} theme={theme} isPreview={isPreview} />
         
         {/* 4. Memory Polaroid Gallery (Conditional) */}
         {birthday.show_memories !== false && birthday.memories && birthday.memories.length > 0 && (

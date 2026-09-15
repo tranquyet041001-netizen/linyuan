@@ -2,6 +2,8 @@ export type ThemeId = 'sakura-day' | 'sakura-night' | 'sunset-sakura' | 'pure-sa
 
 export type MusicType = 'none' | 'youtube' | 'ambient' | 'upload_mp3';
 
+export type AmbientPresetId = 'koto-classic' | 'zen-bell' | 'rain-koto' | 'lofi-beats';
+
 export type BirthdayStatus = 'draft' | 'published' | 'archived';
 
 export type PrivacyType = 'public' | 'unlisted';
@@ -83,6 +85,7 @@ export interface BirthdayData {
 
   // Advanced Music System
   music_type: MusicType;
+  ambient_preset?: AmbientPresetId;
   youtube_url?: string;
   youtube_video_id?: string;
   music_title?: string;

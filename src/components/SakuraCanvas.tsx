@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, memo } from 'react';
 import { SakuraSettings, ThemeConfig } from '../types/birthday';
 
 interface SakuraCanvasProps {
@@ -28,7 +28,7 @@ interface Petal {
   petalType: number;
 }
 
-export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
+const SakuraCanvasComponent: React.FC<SakuraCanvasProps> = ({
   settings,
   theme,
   interactive = true,
@@ -36,6 +36,13 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const petalsRef = useRef<Petal[]>([]);
+  const settingsRef = useRef(settings);
+  const themeRef = useRef(theme);
+
+  // Keep refs up-to-date synchronously on each render
+  settingsRef.current = settings;
+  themeRef.current = theme;
+
   const mouseRef = useRef<{ x: number; y: number; vx: number; vy: number; lastX: number; lastY: number }>({
     x: 0,
     y: 0,
@@ -50,20 +57,22 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
 
   const createPetal = useCallback(
     (width: number, height: number, startOffscreen = true): Petal => {
+      const currentSettings = settingsRef.current;
+      const currentTheme = themeRef.current;
       const z = Math.random();
       // Foreground bokeh petals (z > 0.85) are larger and dreamy
       const isForeground = z > 0.85;
       const isBackground = z < 0.35;
       
       const depthScale = isForeground ? 1.4 + (z - 0.85) * 2.0 : isBackground ? 0.5 + z * 0.4 : 0.8 + z * 0.4;
-      const sizeMultiplier = (settings.petal_size / 50) * depthScale;
+      const sizeMultiplier = (currentSettings.petal_size / 50) * depthScale;
       const baseSize = (10 + Math.random() * 14) * sizeMultiplier;
       
-      const speedMultiplier = (settings.speed / 50) * (isForeground ? 1.3 : isBackground ? 0.6 : 0.9);
-      const windOffset = (settings.wind - 50) / 25;
+      const speedMultiplier = (currentSettings.speed / 50) * (isForeground ? 1.3 : isBackground ? 0.6 : 0.9);
+      const windOffset = (currentSettings.wind - 50) / 25;
 
       const isAltColor = Math.random() > 0.4;
-      const color = isAltColor ? theme.sakuraSecondary : theme.sakuraPrimary;
+      const color = isAltColor ? currentTheme.sakuraSecondary : currentTheme.sakuraPrimary;
 
       return {
         x: Math.random() * (width + 200) - 100,
@@ -72,20 +81,20 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
         size: baseSize,
         baseSize,
         rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.03 * (settings.animation_intensity / 50),
+        rotationSpeed: (Math.random() - 0.5) * 0.03 * (currentSettings.animation_intensity / 50),
         flipAngle: Math.random() * Math.PI,
         flipSpeed: (0.015 + Math.random() * 0.03) * speedMultiplier,
         tiltAngle: (Math.random() - 0.5) * 0.4,
         fallSpeed: (0.8 + Math.random() * 1.5 + z * 0.9) * speedMultiplier,
         horizontalDrift: (0.3 + Math.random() * 0.8 + windOffset) * speedMultiplier,
         oscillationAngle: Math.random() * Math.PI * 2,
-        oscillationSpeed: (0.01 + Math.random() * 0.02) * (settings.animation_intensity / 50),
-        opacity: isForeground ? 0.45 : isBackground ? 0.35 : (0.45 + z * 0.45) * (1 - (settings.blur / 200)),
+        oscillationSpeed: (0.01 + Math.random() * 0.02) * (currentSettings.animation_intensity / 50),
+        opacity: isForeground ? 0.45 : isBackground ? 0.35 : (0.45 + z * 0.45) * (1 - (currentSettings.blur / 200)),
         color,
         petalType: isForeground ? 2 : Math.random() > 0.85 ? 1 : 0,
       };
     },
-    [settings, theme]
+    []
   );
 
   useEffect(() => {
@@ -112,11 +121,22 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
       const baseCount = isMobile ? 38 : 80;
       const targetCount = Math.floor(baseCount * (settings.density / 50));
 
-      const newPetals: Petal[] = [];
-      for (let i = 0; i < targetCount; i++) {
-        newPetals.push(createPetal(width, height, false));
+      const currentPetals = petalsRef.current;
+      if (currentPetals.length === 0) {
+        const newPetals: Petal[] = [];
+        for (let i = 0; i < targetCount; i++) {
+          newPetals.push(createPetal(width, height, false));
+        }
+        petalsRef.current = newPetals;
+      } else if (currentPetals.length < targetCount) {
+        // Smoothly add new petals into the falling stream
+        for (let i = currentPetals.length; i < targetCount; i++) {
+          currentPetals.push(createPetal(width, height, true));
+        }
+      } else if (currentPetals.length > targetCount) {
+        // Smoothly trim excess petals
+        currentPetals.length = targetCount;
       }
-      petalsRef.current = newPetals;
     };
 
     handleResize();
@@ -186,12 +206,13 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     };
   }, [interactive]);
 
-  const drawSakuraPetal = (
+  const drawSakuraPetal = useCallback((
     ctx: CanvasRenderingContext2D,
     petal: Petal,
     scaleX: number
   ) => {
     const s = petal.size;
+    const currentTheme = themeRef.current;
     
     ctx.beginPath();
     ctx.moveTo(0, s * 0.5);
@@ -208,11 +229,11 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.35, petal.color);
 
-    if (theme.id === 'pure-sakura') {
+    if (currentTheme.id === 'pure-sakura') {
       grad.addColorStop(1, '#d8cbbe');
-    } else if (theme.id === 'sunset-sakura') {
+    } else if (currentTheme.id === 'sunset-sakura') {
       grad.addColorStop(1, '#ea580c');
-    } else if (theme.id === 'sakura-day') {
+    } else if (currentTheme.id === 'sakura-day') {
       grad.addColorStop(1, '#f43f5e');
     } else {
       grad.addColorStop(1, '#e11d62');
@@ -221,7 +242,7 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     ctx.fillStyle = grad;
     ctx.fill();
 
-    if (theme.id === 'pure-sakura') {
+    if (currentTheme.id === 'pure-sakura') {
       ctx.strokeStyle = 'rgba(180, 130, 80, 0.2)';
       ctx.lineWidth = 0.5;
       ctx.stroke();
@@ -230,10 +251,10 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     ctx.beginPath();
     ctx.moveTo(0, s * 0.4);
     ctx.lineTo(0, -s * 0.2);
-    ctx.strokeStyle = theme.id === 'pure-sakura' ? 'rgba(180, 130, 80, 0.3)' : 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeStyle = currentTheme.id === 'pure-sakura' ? 'rgba(180, 130, 80, 0.3)' : 'rgba(255, 255, 255, 0.35)';
     ctx.lineWidth = 0.6;
     ctx.stroke();
-  };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -249,6 +270,7 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
 
       const width = parseFloat(canvas.style.width || `${canvas.width}`);
       const height = parseFloat(canvas.style.height || `${canvas.height}`);
+      const currentTheme = themeRef.current;
 
       ctx.clearRect(0, 0, width, height);
 
@@ -301,12 +323,12 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
         // Multi-depth bokeh effect
         if (p.z > 0.85) {
           // Foreground large bokeh petal
-          ctx.shadowColor = theme.petalShadow || 'rgba(255, 183, 197, 0.6)';
+          ctx.shadowColor = currentTheme.petalShadow || 'rgba(255, 183, 197, 0.6)';
           ctx.shadowBlur = 10;
         } else if (p.z > 0.4) {
           // Midground petal
-          ctx.shadowColor = theme.petalShadow;
-          ctx.shadowBlur = (theme.isDark ? 7 : 3) * p.z;
+          ctx.shadowColor = currentTheme.petalShadow;
+          ctx.shadowBlur = (currentTheme.isDark ? 7 : 3) * p.z;
         }
 
         drawSakuraPetal(ctx, p, scaleX);
@@ -324,7 +346,7 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
         cancelAnimationFrame(animFrameIdRef.current);
       }
     };
-  }, [theme, drawSakuraPetal]);
+  }, [drawSakuraPetal]);
 
   return (
     <canvas
@@ -336,3 +358,31 @@ export const SakuraCanvas: React.FC<SakuraCanvasProps> = ({
     />
   );
 };
+
+function areSakuraCanvasPropsEqual(
+  prevProps: SakuraCanvasProps,
+  nextProps: SakuraCanvasProps
+): boolean {
+  if (prevProps.interactive !== nextProps.interactive) return false;
+  if (prevProps.burstTrigger !== nextProps.burstTrigger) return false;
+  if (prevProps.theme.id !== nextProps.theme.id) return false;
+  if (prevProps.theme.sakuraPrimary !== nextProps.theme.sakuraPrimary) return false;
+  if (prevProps.theme.sakuraSecondary !== nextProps.theme.sakuraSecondary) return false;
+  if (prevProps.theme.petalShadow !== nextProps.theme.petalShadow) return false;
+
+  const s1 = prevProps.settings;
+  const s2 = nextProps.settings;
+  if (s1 === s2) return true;
+  if (!s1 || !s2) return false;
+
+  return (
+    s1.density === s2.density &&
+    s1.speed === s2.speed &&
+    s1.wind === s2.wind &&
+    s1.petal_size === s2.petal_size &&
+    s1.blur === s2.blur &&
+    s1.animation_intensity === s2.animation_intensity
+  );
+}
+
+export const SakuraCanvas = memo(SakuraCanvasComponent, areSakuraCanvasPropsEqual);

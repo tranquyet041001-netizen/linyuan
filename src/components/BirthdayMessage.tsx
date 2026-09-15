@@ -6,15 +6,18 @@ import { BirthdayData, ThemeConfig } from '../types/birthday';
 interface BirthdayMessageProps {
   birthday: BirthdayData;
   theme: ThemeConfig;
+  isPreview?: boolean;
 }
 
-export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, theme }) => {
+export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, theme, isPreview = false }) => {
   const fullText = birthday.message || '';
-  const [displayedLength, setDisplayedLength] = useState(0);
-  const [isTyping, setIsTyping] = useState(true);
+  const [displayedLength, setDisplayedLength] = useState(() => (isPreview ? fullText.length : 0));
+  const [isTyping, setIsTyping] = useState(() => !isPreview);
 
-  // Smooth ink calligraphy typewriter effect
+  // Smooth ink calligraphy typewriter effect (bypassed in live preview mode)
   useEffect(() => {
+    if (isPreview) return;
+
     if (!isTyping) {
       setDisplayedLength(fullText.length);
       return;
@@ -30,7 +33,7 @@ export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, them
     } else {
       setIsTyping(false);
     }
-  }, [displayedLength, isTyping, fullText]);
+  }, [displayedLength, isTyping, fullText, isPreview]);
 
   const handleShowAll = () => {
     setIsTyping(false);
@@ -139,25 +142,27 @@ export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, them
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Typewriter Speed / Replay Controls */}
-            {isTyping ? (
-              <button
-                onClick={handleShowAll}
-                className="text-[11px] font-sans px-2.5 py-1 rounded-full bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 transition-colors flex items-center gap-1 cursor-pointer"
-                title="Hiện toàn bộ nội dung ngay lập tức"
-              >
-                <Check className="w-3 h-3" />
-                <span>Đọc ngay</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleReplay}
-                className="text-[11px] font-sans px-2.5 py-1 rounded-full bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 transition-colors flex items-center gap-1 cursor-pointer"
-                title="Xem lại từng nét viết"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Viết lại</span>
-              </button>
+            {/* Typewriter Speed / Replay Controls (Public share mode only) */}
+            {!isPreview && (
+              isTyping ? (
+                <button
+                  onClick={handleShowAll}
+                  className="text-[11px] font-sans px-2.5 py-1 rounded-full bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Hiện toàn bộ nội dung ngay lập tức"
+                >
+                  <Check className="w-3 h-3" />
+                  <span>Đọc ngay</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleReplay}
+                  className="text-[11px] font-sans px-2.5 py-1 rounded-full bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Xem lại từng nét viết"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Viết lại</span>
+                </button>
+              )
             )}
 
             {/* Hanko Seal */}
@@ -183,8 +188,8 @@ export const BirthdayMessage: React.FC<BirthdayMessageProps> = ({ birthday, them
               : 'text-zinc-700 font-normal'
           } whitespace-pre-line tracking-wide min-h-[140px]`}
         >
-          {fullText.slice(0, displayedLength)}
-          {isTyping && (
+          {isPreview ? fullText : fullText.slice(0, displayedLength)}
+          {!isPreview && isTyping && (
             <motion.span
               animate={{ opacity: [1, 0, 1] }}
               transition={{ duration: 0.6, repeat: Infinity }}

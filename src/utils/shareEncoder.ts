@@ -39,7 +39,7 @@ function base64ToUtf8(str: string): string {
 /**
  * Minify BirthdayData object before encoding into URL to keep payload tiny
  */
-function minifyBirthdayForUrl(data: BirthdayData): any {
+export function minifyBirthdayForUrl(data: BirthdayData): any {
   // Strip out heavy base64 data URLs from memories if they exceed URL limits
   const cleanMemories = (data.memories || []).map((m) => {
     // If it's a huge base64 uploaded image (> 50KB), keep only if reasonable
@@ -49,6 +49,8 @@ function minifyBirthdayForUrl(data: BirthdayData): any {
       caption: m.caption,
       year: m.year,
       location: m.location,
+      n: m.note || undefined,
+      note: m.note || undefined,
     };
   });
 
@@ -69,6 +71,7 @@ function minifyBirthdayForUrl(data: BirthdayData): any {
     sm: data.show_memories,
     // Music
     mt: data.music_type,
+    ap: data.ambient_preset || undefined,
     mu: data.music_url,
     yu: data.youtube_url,
     yv: data.youtube_video_id,
@@ -89,7 +92,7 @@ function minifyBirthdayForUrl(data: BirthdayData): any {
 /**
  * Restore minified object back to complete BirthdayData
  */
-function unminifyBirthdayFromUrl(mini: any): BirthdayData {
+export function unminifyBirthdayFromUrl(mini: any): BirthdayData {
   return {
     id: mini.i || `bday-${Date.now()}`,
     slug: mini.s || 'birthday',
@@ -109,6 +112,7 @@ function unminifyBirthdayFromUrl(mini: any): BirthdayData {
     show_memories: mini.sm !== false,
     // Music
     music_type: mini.mt || 'youtube',
+    ambient_preset: mini.ap || undefined,
     music_url: mini.mu || '',
     youtube_url: mini.yu || '',
     youtube_video_id: mini.yv || '',
@@ -146,6 +150,7 @@ function unminifyBirthdayFromUrl(mini: any): BirthdayData {
       caption: m.caption || '',
       year: m.year || '',
       location: m.location || '',
+      note: m.n || m.note || '',
     })),
     timeline: (mini.tl || []).map((t: any) => ({
       id: t.id || `t-${Math.random()}`,
