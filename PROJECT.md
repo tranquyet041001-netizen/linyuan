@@ -29,8 +29,8 @@
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | M1 | Studio Foundation & Audio Engine | `src/types/birthday.ts`, `src/utils/audioSynthesizer.ts`, `src/utils/shareEncoder.ts`, `src/components/SakuraCanvas.tsx`, `src/pages/BirthdayPage.tsx` | none | DONE |
-| M2 | Neo-Japanese Cyber-Zen Studio Editor | `src/pages/CreateBirthday.tsx`, `src/components/MusicEditor.tsx`, UI styling, 4-pillar nav, split-screen, 3D Polaroid front/back, preview frames | M1 | PLANNED |
-| M3 | Final Acceptance, E2E Test Pass & Hardening | Full requirement-driven E2E test suite (Tiers 1-4), Tier 5 adversarial coverage hardening, 100% clean build verification | M1, M2 | PLANNED |
+| M2 | Neo-Japanese Cyber-Zen Studio Editor | `src/pages/CreateBirthday.tsx`, `src/components/MusicEditor.tsx`, UI styling, 4-pillar nav, split-screen, 3D Polaroid front/back, preview frames | M1 | DONE |
+| M3 | Final Acceptance, E2E Test Pass & Hardening | Full requirement-driven E2E test suite (Tiers 1-4), Tier 5 adversarial coverage hardening, 100% clean build verification | M1, M2 | DONE |
 
 ## Interface Contracts
 ### `src/types/birthday.ts`

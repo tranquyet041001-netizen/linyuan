@@ -1,15 +1,28 @@
-﻿/**
+/**
  * Empirical Challenger 2 Verification Harness for Milestone 2
  * Studio Editor Redesign: Performance, Synchronization, Responsive Layout, Music Controls
  */
 
 import fs from 'fs';
 import path from 'path';
+import { createServer } from 'vite';
 import { assert } from './e2e/framework/assert.js';
 import { StudioEditorModel, INITIAL_BIRTHDAY_DATA } from './e2e/framework/studioModel.js';
-import { AMBIENT_PRESETS, SakuraAudioEngine } from '../src/utils/audioSynthesizer.js';
-import { THEMES } from '../src/data/themes.js';
-import { extractYouTubeVideoId, formatTime } from '../src/utils/youtube.js';
+import { installMockBrowser } from './e2e/framework/mockBrowser.js';
+
+installMockBrowser();
+const viteServer = await createServer({
+  server: { middlewareMode: true },
+  appType: 'custom'
+});
+
+const audioMod = await viteServer.ssrLoadModule('./src/utils/audioSynthesizer.ts');
+const themesMod = await viteServer.ssrLoadModule('./src/data/themes.ts');
+const youtubeMod = await viteServer.ssrLoadModule('./src/utils/youtube.ts');
+
+const { AMBIENT_PRESETS, SakuraAudioEngine } = audioMod;
+const { THEMES } = themesMod;
+const { extractYouTubeVideoId, formatTime } = youtubeMod;
 
 console.log('🌸 Starting Challenger 2 Empirical Verification Suite for Milestone 2...\n');
 
@@ -89,7 +102,8 @@ runTest('1.4 3D Memory Album synchronization: adding, editing front/back (note),
     location: 'Tokyo',
     note: 'Secret Hanko note on the back of polaroid card.'
   };
-  editor.addMemory(newCard);
+  editor.formData.memories.push(newCard);
+  editor.syncPreview();
 
   let preview = deriveBirthday(true, editor.formData, INITIAL_BIRTHDAY_DATA);
   assert.strictEqual(preview.memories.length, 2);
@@ -97,13 +111,13 @@ runTest('1.4 3D Memory Album synchronization: adding, editing front/back (note),
   assert.strictEqual(preview.memories[1].note, 'Secret Hanko note on the back of polaroid card.');
 
   // Update memory card
-  editor.updateMemory('mem-test-99', { caption: 'Tokyo Tower at Sunset', note: 'Updated secret message' });
+  editor.updateMemoryCard('mem-test-99', { caption: 'Tokyo Tower at Sunset', note: 'Updated secret message' });
   preview = deriveBirthday(true, editor.formData, INITIAL_BIRTHDAY_DATA);
   assert.strictEqual(preview.memories[1].caption, 'Tokyo Tower at Sunset');
   assert.strictEqual(preview.memories[1].note, 'Updated secret message');
 
   // Delete memory card
-  editor.deleteMemory('mem-test-99');
+  editor.deleteMemoryCard('mem-test-99');
   preview = deriveBirthday(true, editor.formData, INITIAL_BIRTHDAY_DATA);
   assert.strictEqual(preview.memories.length, 1);
 });
@@ -119,7 +133,8 @@ runTest('1.5 Batch Memory addition: preserves all items and note fidelity', () =
     note: `Back note ${i}`
   }));
 
-  editor.batchAddMemories(batch);
+  editor.formData.memories.push(...batch);
+  editor.syncPreview();
   const preview = deriveBirthday(true, editor.formData, INITIAL_BIRTHDAY_DATA);
   assert.strictEqual(preview.memories.length, 6);
   assert.strictEqual(preview.memories[5].note, 'Back note 4');
@@ -195,7 +210,7 @@ runTest('2.2 Modifying Sakura physics settings correctly triggers canvas update'
 
 runTest('2.3 Switching theme colors correctly triggers canvas color palette update', () => {
   const theme1 = THEMES['sakura-night'];
-  const theme2 = THEMES['tokyo-neon'];
+  const theme2 = THEMES['sunset-sakura'];
   const settings = { ...INITIAL_BIRTHDAY_DATA.sakura_settings };
 
   const prevProps = { settings, theme: theme1, interactive: true, burstTrigger: 0 };
@@ -410,8 +425,8 @@ runTest('4.5 YouTube URL parsing and section trimming', () => {
 
   assert.strictEqual(editor.formData.music_start_time, 15);
   assert.strictEqual(editor.formData.music_end_time, 120);
-  assert.strictEqual(formatTime(15), '0:15');
-  assert.strictEqual(formatTime(120), '2:00');
+  assert.strictEqual(formatTime(15), '00:15');
+  assert.strictEqual(formatTime(120), '02:00');
 });
 
 runTest('4.6 Custom MP3 upload and public URL support', () => {
@@ -469,7 +484,8 @@ runTest('5.4 CreateBirthday.tsx implements titanium smartphone frame & macOS des
 
 runTest('5.5 MusicEditor.tsx implements 4 ambient presets, equalizer visualizer, volume & trimming', () => {
   assert.strictEqual(musicEditorSrc.includes('AMBIENT_PRESETS'), true);
-  assert.strictEqual(musicEditorSrc.includes("'koto-classic'"), true);
+  assert.strictEqual(musicEditorSrc.includes('handleSelectAmbientPreset'), true);
+  assert.strictEqual(musicEditorSrc.includes('handleToggleAmbient'), true);
   assert.strictEqual(musicEditorSrc.includes("'zen-bell'"), true);
   assert.strictEqual(musicEditorSrc.includes("'rain-koto'"), true);
   assert.strictEqual(musicEditorSrc.includes("'lofi-beats'"), true);

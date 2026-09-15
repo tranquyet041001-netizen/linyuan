@@ -58,7 +58,9 @@ const TIER4_FILES = [
 ];
 
 const TIER5_FILES = [
-  './tier5-stress/m1_challenger_stress.test.js'
+  './tier5-stress/m1_challenger_stress.test.js',
+  './tier5-stress/m2_challenger_stress.test.js',
+  './tier5-stress/m3_challenger_stress.test.js'
 ];
 
 async function runAll() {
